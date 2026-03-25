@@ -7,6 +7,7 @@ import { EditorPane } from '@/components/ide/EditorPane';
 import { TerminalPane } from '@/components/ide/TerminalPane';
 import { AiPanel } from '@/components/ide/AiPanel';
 import { LivePreview } from '@/components/ide/LivePreview';
+import { SettingsModal } from '@/components/ide/SettingsModal';
 import { useIdeStore } from '@/hooks/use-ide-store';
 import { useGetProject } from '@workspace/api-client-react';
 import { Activity } from 'lucide-react';
@@ -86,6 +87,8 @@ export function IDE() {
           </Panel>
         </PanelGroup>
       </div>
+
+      <SettingsModal />
 
       <div className="h-6 border-t border-primary/20 bg-card flex items-center justify-between px-4 text-[10px] font-mono text-muted-foreground shrink-0 select-none z-20">
         <div className="flex items-center gap-4">

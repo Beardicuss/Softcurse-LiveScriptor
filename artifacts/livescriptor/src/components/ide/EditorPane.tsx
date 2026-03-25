@@ -6,7 +6,7 @@ import { Code2, X, Save } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function EditorPane({ projectId }: { projectId: string }) {
-  const { openFiles, activeTab, closeFile, updateFileContent, openFile, markFileClean } = useIdeStore();
+  const { openFiles, activeTab, closeFile, updateFileContent, openFile, markFileClean, settings } = useIdeStore();
   const queryClient = useQueryClient();
   const saveMutation = useSaveFileContent();
 
@@ -127,8 +127,11 @@ export function EditorPane({ projectId }: { projectId: string }) {
             theme="cyberpunk"
             options={{
               fontFamily: '"Space Mono", monospace',
-              fontSize: 14,
-              minimap: { enabled: false },
+              fontSize: settings.fontSize,
+              tabSize: settings.tabSize,
+              wordWrap: settings.wordWrap,
+              lineNumbers: settings.lineNumbers,
+              minimap: { enabled: settings.minimap },
               padding: { top: 16, bottom: 16 },
               smoothScrolling: true,
               cursorBlinking: 'smooth',

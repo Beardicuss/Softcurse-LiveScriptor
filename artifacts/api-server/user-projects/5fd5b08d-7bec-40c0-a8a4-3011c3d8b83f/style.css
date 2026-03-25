@@ -1,0 +1,2 @@
+body { background: #050810; color: #00ffff; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+.glitch { text-shadow: 0 0 10px #00ffff; }
