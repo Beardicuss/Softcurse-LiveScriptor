@@ -1,0 +1,21 @@
+packages:
+  "zustand": "Global state management for IDE panels, open files, and active tabs"
+  "@monaco-editor/react": "Core code editor component for file editing"
+  "react-resizable-panels": "Draggable and resizable panel groups for the IDE layout"
+  "framer-motion": "Animations for panels and UI transitions"
+  "date-fns": "Date formatting for project timestamps"
+  "clsx": "Classname merging utility for UI components"
+  "tailwind-merge": "Tailwind class merging utility for UI components"
+
+images:
+  - path: "artifacts/livescriptor/public/images/cyber-bg.png"
+    description: "Abstract deep space cyberpunk grid with glowing neon cyan lines and magenta volumetric lights, dark aesthetic, highly detailed"
+    aspect_ratio: "16:9"
+  - path: "artifacts/livescriptor/public/images/logo.png"
+    description: "Minimalist futuristic cyberpunk logo, glowing cyan and magenta geometric shape on pure black background, vector style"
+    aspect_ratio: "1:1"
+
+notes:
+  - Using generated Orval client from @workspace/api-client-react for all API interactions
+  - IDE layout built using react-resizable-panels with a VSCode-like structure
+  - Cyberpunk theme heavily utilizes CSS variables and backdrop-blur effects
