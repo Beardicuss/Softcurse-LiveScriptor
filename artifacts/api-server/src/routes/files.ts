@@ -1,8 +1,12 @@
 import { Router, type IRouter } from "express";
 import path from "path";
 import fs from "fs";
+import { exec } from "child_process";
+import { promisify } from "util";
+import os from "os";
 
 const router: IRouter = Router();
+const execAsync = promisify(exec);
 
 const PROJECTS_ROOT = process.env.PROJECTS_ROOT || path.join(process.cwd(), "user-projects");
 
@@ -216,6 +220,38 @@ router.post("/projects/:projectId/files/rename", async (req, res): Promise<void>
   fs.renameSync(fullOldPath, fullNewPath);
 
   res.json({ success: true, message: "Renamed" });
+});
+
+router.get("/projects/:projectId/download", async (req, res): Promise<void> => {
+  const id = Array.isArray(req.params.projectId) ? req.params.projectId[0] : req.params.projectId;
+  const projectDir = getProjectDir(id);
+
+  if (!fs.existsSync(projectDir)) {
+    res.status(404).json({ error: "not_found", message: "Project not found" });
+    return;
+  }
+
+  const tmpZip = path.join(os.tmpdir(), `project-${id}-${Date.now()}.zip`);
+
+  try {
+    await execAsync(`zip -r "${tmpZip}" .`, { cwd: projectDir });
+
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", `attachment; filename="project-${id}.zip"`);
+
+    const stream = fs.createReadStream(tmpZip);
+    stream.pipe(res);
+    stream.on("end", () => {
+      try { fs.unlinkSync(tmpZip); } catch {}
+    });
+    stream.on("error", () => {
+      try { fs.unlinkSync(tmpZip); } catch {}
+      if (!res.headersSent) res.status(500).json({ error: "stream_error" });
+    });
+  } catch (err: any) {
+    try { fs.unlinkSync(tmpZip); } catch {}
+    res.status(500).json({ error: "zip_failed", message: err.message });
+  }
 });
 
 export default router;

@@ -29,6 +29,8 @@ const DEFAULT_SETTINGS: IdeSettings = {
   formatOnSave: false,
 };
 
+export type LeftPanelView = 'explorer' | 'search' | 'http';
+
 interface IdeState {
   activeProjectId: string | null;
   setActiveProject: (id: string | null) => void;
@@ -50,11 +52,17 @@ interface IdeState {
   setBottomPanelSize: (size: number) => void;
   setRightPanelSize: (size: number) => void;
 
+  leftPanelView: LeftPanelView;
+  setLeftPanelView: (view: LeftPanelView) => void;
+
   settings: IdeSettings;
   updateSettings: (patch: Partial<IdeSettings>) => void;
 
   settingsOpen: boolean;
   setSettingsOpen: (open: boolean) => void;
+
+  commandPaletteOpen: boolean;
+  setCommandPaletteOpen: (open: boolean) => void;
 }
 
 export const useIdeStore = create<IdeState>()(
@@ -103,11 +111,17 @@ export const useIdeStore = create<IdeState>()(
       setBottomPanelSize: (size) => set({ bottomPanelSize: size }),
       setRightPanelSize: (size) => set({ rightPanelSize: size }),
 
+      leftPanelView: 'explorer',
+      setLeftPanelView: (view) => set({ leftPanelView: view }),
+
       settings: DEFAULT_SETTINGS,
       updateSettings: (patch) => set((state) => ({ settings: { ...state.settings, ...patch } })),
 
       settingsOpen: false,
       setSettingsOpen: (open) => set({ settingsOpen: open }),
+
+      commandPaletteOpen: false,
+      setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
     }),
     {
       name: 'livescriptor-ide-state',

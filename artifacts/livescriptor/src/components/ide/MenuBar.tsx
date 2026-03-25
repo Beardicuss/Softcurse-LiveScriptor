@@ -1,15 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
-import { Activity, Play, Settings, FolderOpen } from 'lucide-react';
+import { Play, Settings, FolderOpen, Download, Search } from 'lucide-react';
 import { CyberButton } from '@/components/ui/cyber-components';
 import { useIdeStore } from '@/hooks/use-ide-store';
 import { useGetProject } from '@workspace/api-client-react';
+import { downloadProjectZip } from '@/lib/api';
 
 export function MenuBar({ projectId }: { projectId: string }) {
   const [, setLocation] = useLocation();
   const { data: project } = useGetProject(projectId, { query: { retry: false } });
-  const setActiveTab = useIdeStore(s => s.setActiveTab);
-  const setSettingsOpen = useIdeStore(s => s.setSettingsOpen);
+  const { setActiveTab, setSettingsOpen, setCommandPaletteOpen, leftPanelView, setLeftPanelView } = useIdeStore();
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!project || downloading) return;
+    setDownloading(true);
+    try {
+      await downloadProjectZip(projectId, project.name);
+    } catch (e) {
+      console.error('Download failed:', e);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        setCommandPaletteOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setCommandPaletteOpen]);
 
   return (
     <div className="h-12 border-b border-primary/20 bg-card flex items-center justify-between px-4 select-none shrink-0 relative z-20">
@@ -46,6 +70,14 @@ export function MenuBar({ projectId }: { projectId: string }) {
         <div className="h-6 w-px bg-primary/20" />
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setLeftPanelView('search'); }}
+            title="Search (Ctrl+Shift+F)"
+            className={`p-2 rounded transition-colors ${leftPanelView === 'search' ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'}`}
+          >
+            <Search className="w-4 h-4" />
+          </button>
+
           <CyberButton
             variant="ghost"
             className="!px-3 !py-1.5"
@@ -53,6 +85,16 @@ export function MenuBar({ projectId }: { projectId: string }) {
           >
             <Play className="w-4 h-4 mr-2 inline" /> Preview
           </CyberButton>
+
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            title="Download as ZIP"
+            className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-colors disabled:opacity-50"
+          >
+            <Download className={`w-4 h-4 ${downloading ? 'animate-bounce' : ''}`} />
+          </button>
+
           <button
             onClick={() => setSettingsOpen(true)}
             title="Settings"
