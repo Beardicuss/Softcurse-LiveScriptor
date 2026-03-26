@@ -3,12 +3,14 @@ import { Search, FileText, X } from 'lucide-react';
 import { useIdeStore } from '@/hooks/use-ide-store';
 import { useListFiles } from '@workspace/api-client-react';
 
-function flattenFiles(nodes: any[], prefix = ''): { path: string; name: string }[] {
+function flattenFiles(nodes: any, prefix = ''): { path: string; name: string }[] {
   const result: { path: string; name: string }[] = [];
-  for (const node of nodes ?? []) {
+  if (!Array.isArray(nodes)) return result;
+  for (const node of nodes) {
+    if (!node || typeof node !== 'object') continue;
     if (node.type === 'file') {
       result.push({ path: node.path, name: node.name });
-    } else if (node.children) {
+    } else if (Array.isArray(node.children)) {
       result.push(...flattenFiles(node.children, node.path));
     }
   }
@@ -21,7 +23,7 @@ export function CommandPalette({ projectId }: { projectId: string }) {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { data: files } = useListFiles(projectId, { query: { enabled: commandPaletteOpen } });
+  const { data: files } = useListFiles(projectId, undefined, { query: { enabled: commandPaletteOpen, queryKey: [] } as any });
   const allFiles = useMemo(() => flattenFiles(files ?? []), [files]);
 
   const filtered = useMemo(() => {

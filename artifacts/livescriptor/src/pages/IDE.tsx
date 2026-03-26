@@ -21,7 +21,7 @@ export function IDE() {
   const projectId = params?.id;
 
   const { activeTab, setActiveProject, leftPanelView, setLeftPanelView, setCommandPaletteOpen } = useIdeStore();
-  const { isLoading, isError } = useGetProject(projectId || '', { query: { enabled: !!projectId, retry: false }});
+  const { isLoading, isError } = useGetProject(projectId || '', { query: { enabled: !!projectId, retry: false, queryKey: [] } as any });
 
   useEffect(() => {
     if (projectId) {

@@ -41,13 +41,19 @@ artifacts-monorepo/
 
 ## IDE Features
 
-- **Monaco Editor** — full-featured code editor with syntax highlighting
-- **File Explorer** — tree view with create/delete/rename support
-- **Live Preview** — iframe preview for HTML/CSS/JS projects
-- **Terminal** — execute shell commands within project directory
+- **Monaco Editor** — full-featured code editor with syntax highlighting, cyberpunk theme
+- **File Explorer** — tree view with colored file-type icons, create/rename/delete (right-click context menu), new file/folder buttons
+- **Live Preview** — iframe with correct HTML/CSS/JS inline injection, desktop/tablet/mobile device frame toggles
+- **Terminal** — execute shell commands, command history (↑/↓), clear button
 - **AI Assistant** — GPT-powered chat panel for coding help
-- **Search** — global search across project files
-- **Multiple project types**: vanilla HTML/CSS/JS, React, Vue, Node.js
+- **Search Panel** — global regex/case-sensitive search across project files with file grouping
+- **HTTP Client** — Postman-like request builder with headers, body, response viewer
+- **Command Palette** — Ctrl+P quick file open with fuzzy search
+- **Activity Sidebar** — VSCode-style left icon bar to switch between Explorer / Search / HTTP Client
+- **Settings Panel** — font size, tab size, word wrap, minimap, auto-save, themes (persisted to localStorage)
+- **Auto-save** — debounced 1.5s auto-save when enabled in settings
+- **ZIP Download** — download entire project as .zip via download button in toolbar
+- **Multiple project types**: Vanilla HTML/CSS/JS, React (Vite), Node.js (selectable at project creation)
 
 ## Key Environment Variables
 
@@ -73,7 +79,8 @@ Express 5 API server. Routes:
 - `POST /api/projects/:id/files/delete` — delete file
 - `POST /api/projects/:id/files/rename` — rename file
 - `POST /api/projects/:id/terminal` — execute shell command
-- `POST /api/projects/:id/search` — search files
+- `POST /api/projects/:id/search` — search files (regex, case-sensitive, file pattern)
+- `GET /api/projects/:id/download` — download project as ZIP
 - `POST /api/ai/chat` — AI assistant chat
 
 ### `artifacts/livescriptor` (`@workspace/livescriptor`)

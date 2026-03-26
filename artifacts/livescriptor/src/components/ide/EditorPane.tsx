@@ -28,7 +28,7 @@ export function EditorPane({ projectId }: { projectId: string }) {
   const { data: fileData, isLoading } = useGetFileContent(
     projectId,
     { path: activeTab || '' },
-    { query: { enabled: !!activeTab && activeTab !== 'LIVE_PREVIEW' && !activeFileObj, retry: false } }
+    { query: { enabled: !!activeTab && activeTab !== 'LIVE_PREVIEW' && !activeFileObj, retry: false, queryKey: [] } as any }
   );
 
   useEffect(() => {

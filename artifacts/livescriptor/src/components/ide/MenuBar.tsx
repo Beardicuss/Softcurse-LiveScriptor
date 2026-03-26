@@ -8,7 +8,7 @@ import { downloadProjectZip } from '@/lib/api';
 
 export function MenuBar({ projectId }: { projectId: string }) {
   const [, setLocation] = useLocation();
-  const { data: project } = useGetProject(projectId, { query: { retry: false } });
+  const { data: project } = useGetProject(projectId, { query: { retry: false, queryKey: [] } as any });
   const { setActiveTab, setSettingsOpen, setCommandPaletteOpen, leftPanelView, setLeftPanelView } = useIdeStore();
   const [downloading, setDownloading] = useState(false);
 

@@ -20,9 +20,9 @@ export function LivePreview({ projectId }: { projectId: string }) {
 
   const getFileState = (path: string) => openFiles.find(f => f.path === path)?.content;
 
-  const htmlQuery = useGetFileContent(projectId, { path: '/index.html' }, { query: { retry: false }});
-  const cssQuery  = useGetFileContent(projectId, { path: '/style.css' },  { query: { retry: false }});
-  const jsQuery   = useGetFileContent(projectId, { path: '/script.js' },  { query: { retry: false }});
+  const htmlQuery = useGetFileContent(projectId, { path: '/index.html' }, { query: { retry: false, queryKey: [] } as any });
+  const cssQuery  = useGetFileContent(projectId, { path: '/style.css' },  { query: { retry: false, queryKey: [] } as any });
+  const jsQuery   = useGetFileContent(projectId, { path: '/script.js' },  { query: { retry: false, queryKey: [] } as any });
 
   const runPreview = useCallback(() => {
     setIsBuilding(true);
