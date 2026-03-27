@@ -40,9 +40,7 @@ LiveScriptor is fully detached from legacy web-hosted constraints, featuring a r
 
 ## ▶️ Usage & Demonstration
 
-*(Replace this section with a GIF or screenshot of the IDE in action! People love moving pixels.)*
-
-![Demo Placeholder](https://via.placeholder.com/800x400.png?text=Insert+LiveScriptor+Demo+GIF+Here)
+![Softcurse LiveScriptor Demo](assets/IDE.gif)
 
 **Quick Workflow:**
 1. Boot the Application.
