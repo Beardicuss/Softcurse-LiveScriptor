@@ -1,16 +1,32 @@
 {
-  "name": "workspace",
-  "version": "0.0.0",
+  "name": "softcurse-livescriptor",
+  "version": "1.0.0",
   "license": "MIT",
+  "description": "Softcurse LiveScriptor — Advanced Next-Gen IDE by Softcurse Lab",
+  "author": "Softcurse Lab",
+  "main": "electron/main.js",
   "scripts": {
-    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --if-present run typecheck",
+    "electron:compile": "node electron/build.mjs",
+    "electron:dev": "concurrently -k -n api,vite,electron \"pnpm --filter @workspace/api-server run dev\" \"pnpm --filter @workspace/livescriptor run dev\" \"wait-on http://localhost:5173 && node electron/launch.js\"",
+    "electron:build": "pnpm -r --if-present run build && node electron/build.mjs && electron-builder",
+    "electron:pack": "pnpm -r --if-present run build && node electron/build.mjs && electron-builder --dir"
   },
   "private": true,
   "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "catalog:",
+    "concurrently": "^9.1.0",
+    "cross-env": "^10.1.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^26.0.0",
+    "esbuild": "^0.27.3",
+    "express": "^5.2.1",
+    "prettier": "^3.8.1",
+    "tsx": "catalog:",
     "typescript": "~5.9.2",
-    "prettier": "^3.8.1"
+    "wait-on": "^8.0.0"
   }
 }

@@ -1,12 +1,39 @@
 import { Router, type IRouter } from "express";
 import OpenAI from "openai";
+import { db, settingsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
-const openai = new OpenAI({
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-});
+/** Well-known provider base URLs */
+const PROVIDER_URLS: Record<string, string> = {
+  openai: "https://api.openai.com/v1",
+  openrouter: "https://openrouter.ai/api/v1",
+  gemini: "https://generativelanguage.googleapis.com/v1beta/openai",
+  grok: "https://api.x.ai/v1",
+};
+
+/** Default models per provider */
+const DEFAULT_MODELS: Record<string, string> = {
+  openai: "gpt-4o",
+  openrouter: "openai/gpt-4o",
+  gemini: "gemini-2.5-flash",
+  grok: "grok-3",
+};
+
+async function getAiConfig() {
+  const rows = await db.select().from(settingsTable);
+  const settings: Record<string, string> = {};
+  for (const row of rows) {
+    settings[row.key] = row.value;
+  }
+
+  const provider = settings["ai_provider"] || "openai";
+  const apiKey = settings["ai_api_key"] || "";
+  const baseURL = settings["ai_base_url"] || PROVIDER_URLS[provider] || PROVIDER_URLS.openai;
+  const model = settings["ai_model"] || DEFAULT_MODELS[provider] || "gpt-4o";
+
+  return { provider, apiKey, baseURL, model };
+}
 
 router.post("/ai/chat", async (req, res): Promise<void> => {
   const { message, context, fileContent, filePath, history = [] } = req.body;
@@ -16,7 +43,22 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
     return;
   }
 
-  const systemPrompt = `You are an expert coding assistant built into Softcurse LiveScriptor IDE. 
+  const config = await getAiConfig();
+
+  if (!config.apiKey) {
+    res.status(400).json({
+      error: "no_api_key",
+      message: "No AI API key configured. Go to Settings → AI Provider to add your key.",
+    });
+    return;
+  }
+
+  const openai = new OpenAI({
+    baseURL: config.baseURL,
+    apiKey: config.apiKey,
+  });
+
+  const systemPrompt = `You are an expert coding assistant built into Softcurse LiveScriptor IDE.
 You help developers write, debug, and improve their code.
 You provide concise, practical answers with code examples when helpful.
 Format code blocks with proper syntax.
@@ -32,7 +74,7 @@ ${context ? `\nProject context: ${context}` : ""}`;
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-5.2",
+      model: config.model,
       max_completion_tokens: 8192,
       messages,
     });
@@ -45,7 +87,12 @@ ${context ? `\nProject context: ${context}` : ""}`;
     });
   } catch (err: any) {
     req.log.error({ err }, "AI chat error");
-    res.status(500).json({ error: "ai_error", message: "Failed to get AI response" });
+    const errorMsg = err.message?.includes("401")
+      ? "Invalid API key. Check your key in Settings → AI Provider."
+      : err.message?.includes("404")
+        ? `Model "${config.model}" not found for provider "${config.provider}". Check Settings → AI Provider.`
+        : "Failed to get AI response. Check your API key and provider settings.";
+    res.status(500).json({ error: "ai_error", message: errorMsg });
   }
 });
 

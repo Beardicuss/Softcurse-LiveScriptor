@@ -4,6 +4,10 @@ import { eq } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import { exec } from "child_process";
+import { promisify } from "util";
+
+const execAsync = promisify(exec);
 
 const router: IRouter = Router();
 
@@ -236,6 +240,58 @@ router.post("/projects", async (req, res): Promise<void> => {
   }
 
   res.status(201).json(project);
+});
+
+router.post("/projects/import", async (req, res): Promise<void> => {
+  const { url, name, description } = req.body;
+
+  if (!url || typeof url !== "string") {
+    res.status(400).json({ error: "bad_request", message: "Git URL is required" });
+    return;
+  }
+
+  const projectName = name || url.split('/').pop()?.replace('.git', '') || "imported-project";
+
+  const [project] = await db
+    .insert(projectsTable)
+    .values({ name: projectName, description: description || "Imported from Git", type: "vanilla" })
+    .returning();
+
+  ensureProjectsRoot();
+  const projectDir = getProjectDir(project.id);
+
+  try {
+    if (fs.existsSync(url)) {
+      const stat = fs.statSync(url);
+      if (stat.isDirectory()) {
+        fs.cpSync(url, projectDir, { recursive: true });
+      } else if (url.toLowerCase().endsWith(".zip")) {
+        fs.mkdirSync(projectDir, { recursive: true });
+        const isWindows = process.platform === "win32";
+        if (isWindows) {
+          await execAsync(`tar.exe -xf "${url}" -C "${projectDir}"`);
+        } else {
+          await execAsync(`unzip "${url}" -d "${projectDir}"`);
+        }
+      } else {
+        throw new Error("Local path must be a directory or a .zip file");
+      }
+    } else if (url.startsWith("http") || url.startsWith("git@") || url.startsWith("github")) {
+      await execAsync(`git clone "${url}" "${projectDir}"`);
+    } else {
+      throw new Error("Invalid source: must be a Git URL or an existing local path");
+    }
+
+    res.status(201).json(project);
+  } catch (error: any) {
+    // Cleanup DB and folder if git clone fails
+    await db.delete(projectsTable).where(eq(projectsTable.id, project.id));
+    if (fs.existsSync(projectDir)) {
+      fs.rmSync(projectDir, { recursive: true, force: true });
+    }
+    console.error("Git clone failed:", error);
+    res.status(500).json({ error: "git_clone_failed", message: error.message });
+  }
 });
 
 router.get("/projects/:projectId", async (req, res): Promise<void> => {

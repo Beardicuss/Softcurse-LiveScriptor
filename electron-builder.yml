@@ -1,0 +1,39 @@
+appId: com.softcurse.livescriptor
+productName: Softcurse LiveScriptor
+copyright: Copyright © 2026 Softcurse Lab
+
+directories:
+  output: release
+  buildResources: assets
+
+files:
+  - electron/dist/**/*
+  - artifacts/api-server/dist/**/*
+  - artifacts/livescriptor/dist/**/*
+  - lib/db/src/**/*
+  - node_modules/**/*
+  - package.json
+
+extraMetadata:
+  main: electron/dist/main.js
+
+asar: true
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/icon.ico
+  artifactName: "${productName}-${version}-Setup.${ext}"
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: assets/icon.ico
+  uninstallerIcon: assets/icon.ico
+  installerHeaderIcon: assets/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Softcurse LiveScriptor

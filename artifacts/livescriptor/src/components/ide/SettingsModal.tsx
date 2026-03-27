@@ -1,6 +1,7 @@
 import React from 'react';
-import { X, Settings, Monitor, Type, ToggleLeft, ToggleRight, AlignLeft, Code2, Save } from 'lucide-react';
+import { X, Settings, Monitor, Type, ToggleLeft, ToggleRight, AlignLeft, Code2, Save, Cpu } from 'lucide-react';
 import { useIdeStore, IdeSettings } from '@/hooks/use-ide-store';
+import { AiSettingsPanel } from './AiSettingsPanel';
 
 function SettingRow({ label, description, children }: { label: string; description?: string; children: React.ReactNode }) {
   return (
@@ -18,13 +19,11 @@ function CyberToggle({ checked, onChange }: { checked: boolean; onChange: (v: bo
   return (
     <button
       onClick={() => onChange(!checked)}
-      className={`relative w-12 h-6 rounded-full transition-all duration-300 border ${
-        checked ? 'bg-primary/20 border-primary' : 'bg-background border-primary/30'
-      }`}
+      className={`relative w-12 h-6 rounded-full transition-all duration-300 border ${checked ? 'bg-primary/20 border-primary' : 'bg-background border-primary/30'
+        }`}
     >
-      <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full transition-all duration-300 ${
-        checked ? 'translate-x-6 bg-primary shadow-[0_0_8px_#00ffff]' : 'bg-muted-foreground'
-      }`} />
+      <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full transition-all duration-300 ${checked ? 'translate-x-6 bg-primary shadow-[0_0_8px_#00ffff]' : 'bg-muted-foreground'
+        }`} />
     </button>
   );
 }
@@ -65,7 +64,7 @@ function NumberStepper({ value, onChange, min, max, step = 1 }: {
   );
 }
 
-type SettingsSection = 'editor' | 'appearance' | 'files';
+type SettingsSection = 'editor' | 'files' | 'ai';
 
 export function SettingsModal() {
   const { settingsOpen, setSettingsOpen, settings, updateSettings } = useIdeStore();
@@ -75,8 +74,8 @@ export function SettingsModal() {
 
   const sections: { id: SettingsSection; label: string; icon: React.ReactNode }[] = [
     { id: 'editor', label: 'Editor', icon: <Code2 className="w-4 h-4" /> },
-    { id: 'appearance', label: 'Appearance', icon: <Monitor className="w-4 h-4" /> },
     { id: 'files', label: 'Files', icon: <Save className="w-4 h-4" /> },
+    { id: 'ai', label: 'AI Provider', icon: <Cpu className="w-4 h-4" /> },
   ];
 
   return (
@@ -107,11 +106,10 @@ export function SettingsModal() {
               <button
                 key={s.id}
                 onClick={() => setActiveSection(s.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-mono rounded transition-all ${
-                  activeSection === s.id
-                    ? 'bg-primary/15 text-primary border border-primary/30'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-primary/5'
-                }`}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-mono rounded transition-all ${activeSection === s.id
+                  ? 'bg-primary/15 text-primary border border-primary/30'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-primary/5'
+                  }`}
               >
                 {s.icon}
                 {s.label}
@@ -159,47 +157,7 @@ export function SettingsModal() {
               </div>
             )}
 
-            {activeSection === 'appearance' && (
-              <div>
-                <h3 className="text-xs uppercase tracking-widest text-primary/60 mb-4 font-mono">UI Appearance</h3>
-                <SettingRow label="Color Theme" description="IDE color scheme">
-                  <CyberSelect
-                    value={settings.theme}
-                    onChange={v => updateSettings({ theme: v as IdeSettings['theme'] })}
-                    options={[
-                      { value: 'cyberpunk', label: 'Cyberpunk (Default)' },
-                      { value: 'dark', label: 'Dark Matter' },
-                      { value: 'light', label: 'Ghost Light' },
-                    ]}
-                  />
-                </SettingRow>
-                <div className="mt-6 p-4 border border-primary/20 bg-background/40 rounded-sm">
-                  <p className="text-xs font-mono text-muted-foreground">Theme preview</p>
-                  <div className="mt-3 space-y-1.5">
-                    <div className="text-xs font-mono">
-                      <span className="text-[#00ffff]">function</span>
-                      <span className="text-foreground"> </span>
-                      <span className="text-[#00ffc8]">init</span>
-                      <span className="text-foreground">()</span>
-                      <span className="text-primary"> {'{'}</span>
-                    </div>
-                    <div className="text-xs font-mono pl-4">
-                      <span className="text-muted-foreground">// </span>
-                      <span className="text-muted-foreground">System boot sequence</span>
-                    </div>
-                    <div className="text-xs font-mono pl-4">
-                      <span className="text-[#ff6b35]">console</span>
-                      <span className="text-foreground">.log(</span>
-                      <span className="text-[#00ffc8]">"ONLINE"</span>
-                      <span className="text-foreground">);</span>
-                    </div>
-                    <div className="text-xs font-mono">
-                      <span className="text-primary">{'}'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+
 
             {activeSection === 'files' && (
               <div>
@@ -211,6 +169,10 @@ export function SettingsModal() {
                   <CyberToggle checked={settings.formatOnSave} onChange={v => updateSettings({ formatOnSave: v })} />
                 </SettingRow>
               </div>
+            )}
+
+            {activeSection === 'ai' && (
+              <AiSettingsPanel />
             )}
           </div>
         </div>

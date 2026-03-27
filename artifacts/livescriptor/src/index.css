@@ -81,10 +81,15 @@
 @layer utilities {
   .cyber-grid {
     background-image: 
-      linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
-    background-size: 30px 30px;
-    background-position: center center;
+      linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: top center;
+    animation: grid-scroll 3s linear infinite;
+  }
+
+  .cyber-bg-pan {
+    animation: bg-pan 30s ease-in-out infinite alternate;
   }
 
   .cyber-scrollbar::-webkit-scrollbar {
@@ -134,4 +139,15 @@
 }
 .hover-glitch:hover {
   animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+}
+
+@keyframes grid-scroll {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 40px; }
+}
+
+@keyframes bg-pan {
+  0% { transform: scale(1.05) translate(0, 0); }
+  50% { transform: scale(1.1) translate(-2%, 2%); }
+  100% { transform: scale(1.05) translate(2%, -1%); }
 }

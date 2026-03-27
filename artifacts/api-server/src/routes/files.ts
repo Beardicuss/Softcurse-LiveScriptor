@@ -234,7 +234,13 @@ router.get("/projects/:projectId/download", async (req, res): Promise<void> => {
   const tmpZip = path.join(os.tmpdir(), `project-${id}-${Date.now()}.zip`);
 
   try {
-    await execAsync(`zip -r "${tmpZip}" .`, { cwd: projectDir });
+    const isWindows = process.platform === "win32";
+    if (isWindows) {
+      // Windows 10+ includes tar natively, which correctly creates zip archives
+      await execAsync(`tar.exe -acvf "${tmpZip}" *`, { cwd: projectDir });
+    } else {
+      await execAsync(`zip -r "${tmpZip}" .`, { cwd: projectDir });
+    }
 
     res.setHeader("Content-Type", "application/zip");
     res.setHeader("Content-Disposition", `attachment; filename="project-${id}.zip"`);
@@ -242,14 +248,14 @@ router.get("/projects/:projectId/download", async (req, res): Promise<void> => {
     const stream = fs.createReadStream(tmpZip);
     stream.pipe(res);
     stream.on("end", () => {
-      try { fs.unlinkSync(tmpZip); } catch {}
+      try { fs.unlinkSync(tmpZip); } catch { }
     });
     stream.on("error", () => {
-      try { fs.unlinkSync(tmpZip); } catch {}
+      try { fs.unlinkSync(tmpZip); } catch { }
       if (!res.headersSent) res.status(500).json({ error: "stream_error" });
     });
   } catch (err: any) {
-    try { fs.unlinkSync(tmpZip); } catch {}
+    try { fs.unlinkSync(tmpZip); } catch { }
     res.status(500).json({ error: "zip_failed", message: err.message });
   }
 });

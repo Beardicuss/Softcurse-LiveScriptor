@@ -52,13 +52,15 @@ router.post("/projects/:projectId/terminal", async (req, res): Promise<void> => 
   const startTime = Date.now();
 
   try {
+    const isWindows = process.platform === "win32";
     const { stdout, stderr } = await execAsync(command, {
       cwd: workDir,
       timeout: 30000,
       maxBuffer: 1024 * 1024 * 5,
+      shell: isWindows ? "powershell.exe" : undefined,
       env: {
         ...process.env,
-        PATH: process.env.PATH + ":/usr/local/bin:/usr/bin:/bin",
+        PATH: process.env.PATH + (isWindows ? "" : ":/usr/local/bin:/usr/bin:/bin"),
       },
     });
 
@@ -107,7 +109,7 @@ router.post("/projects/:projectId/search", async (req, res): Promise<void> => {
             const re = new RegExp(query, flags);
             const m = line.match(re);
             if (m) { match = true; matchStr = m[0]; }
-          } catch {}
+          } catch { }
         } else {
           const haystack = caseSensitive ? line : line.toLowerCase();
           const needle = caseSensitive ? query : query.toLowerCase();
@@ -128,7 +130,7 @@ router.post("/projects/:projectId/search", async (req, res): Promise<void> => {
           });
         }
       });
-    } catch {}
+    } catch { }
   }
 
   function walkDir(dirPath: string, relPath: string) {

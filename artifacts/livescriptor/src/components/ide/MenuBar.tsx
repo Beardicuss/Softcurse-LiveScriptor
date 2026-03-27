@@ -2,6 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { Play, Settings, FolderOpen, Download, Search } from 'lucide-react';
 import { CyberButton } from '@/components/ui/cyber-components';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+} from '@/components/ui/dropdown-menu';
 import { useIdeStore } from '@/hooks/use-ide-store';
 import { useGetProject } from '@workspace/api-client-react';
 import { downloadProjectZip } from '@/lib/api';
@@ -51,10 +59,69 @@ export function MenuBar({ projectId }: { projectId: string }) {
         </div>
 
         <div className="hidden md:flex items-center gap-1 text-sm font-mono text-muted-foreground">
-          <button className="px-3 py-1.5 hover:bg-primary/10 hover:text-primary transition-colors">File</button>
-          <button className="px-3 py-1.5 hover:bg-primary/10 hover:text-primary transition-colors">Edit</button>
-          <button className="px-3 py-1.5 hover:bg-primary/10 hover:text-primary transition-colors">View</button>
-          <button className="px-3 py-1.5 hover:bg-primary/10 hover:text-primary transition-colors">Run</button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="px-3 py-1.5 hover:bg-primary/10 hover:text-primary outline-none transition-colors data-[state=open]:bg-primary/10 data-[state=open]:text-primary">File</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-card border-primary/20 neon-border">
+              <DropdownMenuItem onClick={() => setLocation('/welcome')} className="focus:bg-primary/20 focus:text-primary cursor-pointer">
+                New Project
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation('/welcome')} className="focus:bg-primary/20 focus:text-primary cursor-pointer">
+                Close Project
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-primary/20" />
+              <DropdownMenuItem onClick={handleDownload} disabled={downloading} className="focus:bg-primary/20 focus:text-primary cursor-pointer">
+                Download as ZIP
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-primary/20" />
+              <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="focus:bg-primary/20 focus:text-primary cursor-pointer">
+                Settings
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="px-3 py-1.5 hover:bg-primary/10 hover:text-primary outline-none transition-colors data-[state=open]:bg-primary/10 data-[state=open]:text-primary">Edit</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-card border-primary/20 neon-border">
+              <DropdownMenuItem onClick={() => setCommandPaletteOpen(true)} className="focus:bg-primary/20 focus:text-primary cursor-pointer">
+                Command Palette
+                <DropdownMenuShortcut>Ctrl+P</DropdownMenuShortcut>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-primary/20" />
+              <DropdownMenuItem onClick={() => setLeftPanelView('search')} className="focus:bg-primary/20 focus:text-primary cursor-pointer">
+                Search in Files
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="px-3 py-1.5 hover:bg-primary/10 hover:text-primary outline-none transition-colors data-[state=open]:bg-primary/10 data-[state=open]:text-primary">View</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-card border-primary/20 neon-border">
+              <DropdownMenuItem onClick={() => setLeftPanelView('explorer')} className="focus:bg-primary/20 focus:text-primary cursor-pointer">
+                File Explorer
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLeftPanelView('search')} className="focus:bg-primary/20 focus:text-primary cursor-pointer">
+                Search Panel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="px-3 py-1.5 hover:bg-primary/10 hover:text-primary outline-none transition-colors data-[state=open]:bg-primary/10 data-[state=open]:text-primary">Run</button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-card border-primary/20 neon-border">
+              <DropdownMenuItem onClick={() => setActiveTab('LIVE_PREVIEW')} className="focus:bg-primary/20 focus:text-primary cursor-pointer">
+                Live Preview
+                <DropdownMenuShortcut><Play className="w-3 h-3 inline" /></DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

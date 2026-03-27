@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   ChevronRight, ChevronDown, Plus, FolderPlus, RefreshCw,
-  Trash2, Edit2, FolderOpen, Folder,
+  Trash2, Edit2, FolderOpen, Folder, ChevronsUp,
   FileText, FileCode, FileImage, FileJson, Globe,
 } from 'lucide-react';
 import { useListFiles, useCreateFile, useDeleteFile, useRenameFile, type FileNode } from '@workspace/api-client-react';
@@ -38,6 +38,7 @@ export function FileExplorer({ projectId }: { projectId: string }) {
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
   const [renaming, setRenaming] = useState<FileNode | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [collapseSignal, setCollapseSignal] = useState(0);
   const createMutation = useCreateFile();
   const deleteMutation = useDeleteFile();
   const renameMutation = useRenameFile();
@@ -106,6 +107,9 @@ export function FileExplorer({ projectId }: { projectId: string }) {
           <button onClick={() => refetch()} className="p-1 hover:text-secondary transition-colors" title="Refresh">
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
+          <button onClick={() => setCollapseSignal(s => s + 1)} className="p-1 hover:text-secondary transition-colors" title="Collapse All">
+            <ChevronsUp className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
@@ -139,6 +143,7 @@ export function FileExplorer({ projectId }: { projectId: string }) {
             renameValue={renameValue}
             setRenameValue={setRenameValue}
             handleRename={handleRename}
+            collapseSignal={collapseSignal}
           />
         )}
       </div>
@@ -168,7 +173,7 @@ export function FileExplorer({ projectId }: { projectId: string }) {
 }
 
 function FileTree({
-  nodes, projectId, level, onContextMenu, renaming, renameValue, setRenameValue, handleRename,
+  nodes, projectId, level, onContextMenu, renaming, renameValue, setRenameValue, handleRename, collapseSignal,
 }: {
   nodes: FileNode[];
   projectId: string;
@@ -178,6 +183,7 @@ function FileTree({
   renameValue: string;
   setRenameValue: (v: string) => void;
   handleRename: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  collapseSignal: number;
 }) {
   const { setActiveTab, activeTab } = useIdeStore();
 
@@ -195,6 +201,7 @@ function FileTree({
               renameValue={renameValue}
               setRenameValue={setRenameValue}
               handleRename={handleRename}
+              collapseSignal={collapseSignal}
             />
           ) : renaming?.path === node.path ? (
             <div className="px-2" style={{ paddingLeft: `${level * 12 + 8}px` }}>
@@ -234,7 +241,7 @@ function FileTree({
   );
 }
 
-function FolderNode({ node, projectId, level, onContextMenu, renaming, renameValue, setRenameValue, handleRename }: {
+function FolderNode({ node, projectId, level, onContextMenu, renaming, renameValue, setRenameValue, handleRename, collapseSignal }: {
   node: FileNode;
   projectId: string;
   level: number;
@@ -243,8 +250,13 @@ function FolderNode({ node, projectId, level, onContextMenu, renaming, renameVal
   renameValue: string;
   setRenameValue: (v: string) => void;
   handleRename: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  collapseSignal: number;
 }) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(level === 0);
+
+  useEffect(() => {
+    if (collapseSignal > 0) setIsOpen(false);
+  }, [collapseSignal]);
 
   return (
     <div>
@@ -280,6 +292,7 @@ function FolderNode({ node, projectId, level, onContextMenu, renaming, renameVal
           renameValue={renameValue}
           setRenameValue={setRenameValue}
           handleRename={handleRename}
+          collapseSignal={collapseSignal}
         />
       )}
     </div>

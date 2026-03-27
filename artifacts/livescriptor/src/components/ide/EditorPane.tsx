@@ -22,6 +22,7 @@ export function EditorPane({ projectId }: { projectId: string }) {
   const queryClient = useQueryClient();
   const saveMutation = useSaveFileContent();
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editorRef = useRef<any>(null);
 
   const activeFileObj = openFiles.find(f => f.path === activeTab);
 
@@ -37,8 +38,21 @@ export function EditorPane({ projectId }: { projectId: string }) {
     }
   }, [fileData, activeFileObj, activeTab, openFile]);
 
-  const doSave = useCallback((fileObj: typeof activeFileObj) => {
-    if (!fileObj || !fileObj.isDirty) return;
+  const executeSave = useCallback(async (fileObj: typeof activeFileObj) => {
+    if (!fileObj) return;
+
+    // Format on save logic
+    if (settings.formatOnSave && editorRef.current) {
+      await editorRef.current.getAction('editor.action.formatDocument')?.run();
+      // small delay to allow monaco to update the store via onChange
+      await new Promise(r => setTimeout(r, 50));
+      // Re-fetch the current fileObj from store as content might have changed
+      fileObj = useIdeStore.getState().openFiles.find(f => f.path === fileObj!.path);
+      if (!fileObj) return;
+    }
+
+    if (!fileObj.isDirty && !settings.formatOnSave) return;
+
     saveMutation.mutate(
       { projectId, data: { path: fileObj.path, content: fileObj.content } },
       {
@@ -48,7 +62,7 @@ export function EditorPane({ projectId }: { projectId: string }) {
         }
       }
     );
-  }, [saveMutation, projectId, markFileClean, queryClient]);
+  }, [saveMutation, projectId, markFileClean, queryClient, settings.formatOnSave]);
 
   const handleEditorChange = (value: string | undefined) => {
     if (!activeTab || value === undefined) return;
@@ -58,7 +72,7 @@ export function EditorPane({ projectId }: { projectId: string }) {
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
       autoSaveTimer.current = setTimeout(() => {
         const current = useIdeStore.getState().openFiles.find(f => f.path === activeTab);
-        doSave(current);
+        executeSave(current);
       }, 1500);
     }
   };
@@ -68,12 +82,12 @@ export function EditorPane({ projectId }: { projectId: string }) {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-        doSave(useIdeStore.getState().openFiles.find(f => f.path === activeTab));
+        executeSave(useIdeStore.getState().openFiles.find(f => f.path === activeTab));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, doSave]);
+  }, [activeTab, executeSave]);
 
   const monaco = useMonaco();
   useEffect(() => {
@@ -133,6 +147,7 @@ export function EditorPane({ projectId }: { projectId: string }) {
             language={getLanguage(activeFileObj.path)}
             value={activeFileObj.content}
             onChange={handleEditorChange}
+            onMount={(editor) => editorRef.current = editor}
             theme="cyberpunk"
             options={{
               fontFamily: '"Space Mono", monospace',

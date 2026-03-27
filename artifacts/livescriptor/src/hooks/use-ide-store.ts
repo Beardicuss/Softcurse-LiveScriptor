@@ -13,7 +13,6 @@ export interface IdeSettings {
   wordWrap: 'on' | 'off' | 'wordWrapColumn' | 'bounded';
   minimap: boolean;
   autoSave: boolean;
-  theme: 'cyberpunk' | 'dark' | 'light';
   lineNumbers: 'on' | 'off' | 'relative';
   formatOnSave: boolean;
 }
@@ -24,7 +23,6 @@ const DEFAULT_SETTINGS: IdeSettings = {
   wordWrap: 'on',
   minimap: false,
   autoSave: true,
-  theme: 'cyberpunk',
   lineNumbers: 'on',
   formatOnSave: false,
 };

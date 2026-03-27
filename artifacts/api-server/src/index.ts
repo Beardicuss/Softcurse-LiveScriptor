@@ -1,25 +1,26 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 
-const rawPort = process.env["PORT"];
+const port = Number(process.env.PORT) || 3000;
 
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
+export function startServer(overridePort?: number): Promise<void> {
+  const listenPort = overridePort ?? port;
+  return new Promise((resolve, reject) => {
+    app.listen(listenPort, (err) => {
+      if (err) {
+        logger.error({ err }, "Error listening on port");
+        reject(err);
+        return;
+      }
+      logger.info({ port: listenPort }, "Server listening");
+      resolve();
+    });
+  });
 }
 
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
+// When run directly (not imported by Electron), start immediately
+if (process.env.ELECTRON !== "true") {
+  startServer().catch(() => process.exit(1));
 }
 
-app.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
-  }
-
-  logger.info({ port }, "Server listening");
-});
+export default app;
