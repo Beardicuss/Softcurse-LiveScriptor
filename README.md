@@ -4,6 +4,8 @@
   # Softcurse LiveScriptor
   
   **An advanced, self-hosted Cyberpunk Web-IDE packaged into a high-performance Windows Desktop Application.**
+  
+  🌐 **[Official Website: softcurse-website.pages.dev/lab/livescriptor](https://softcurse-website.pages.dev/lab/livescriptor)**
 
   <img src="assets/IDE.gif" alt="LiveScriptor Interface Demo" width="800" style="border-radius: 8px; margin-top: 20px; box-shadow: 0 0 20px rgba(0,255,150,0.5);" />
 
@@ -164,5 +166,6 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 
 ## 💬 Support
 
+- 🌐 **Official Website:** [softcurse-website.pages.dev](https://softcurse-website.pages.dev)
 - **Bug Reports & Feature Requests:** Open an issue via the [GitHub Issues](https://github.com/Beardicuss/Softcurse-LiveScriptor/issues) tab.
 - **Security Vulnerabilities:** Please review our [Security Policy](SECURITY.md) for direct email reporting guidelines.

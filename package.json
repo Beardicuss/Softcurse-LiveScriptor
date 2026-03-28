@@ -4,6 +4,7 @@
   "license": "MIT",
   "description": "Softcurse LiveScriptor — Advanced Next-Gen IDE by Softcurse Lab",
   "author": "Softcurse Lab",
+  "homepage": "https://softcurse-website.pages.dev/lab/livescriptor",
   "main": "electron/dist/main.js",
   "scripts": {
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
