@@ -31,4 +31,13 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
+// In production (Electron), serve the built React frontend
+if (process.env.STATIC_ROOT) {
+  const staticRoot = process.env.STATIC_ROOT;
+  app.use(express.static(staticRoot));
+  app.get("/{*path}", (_req, res) => {
+    res.sendFile("index.html", { root: staticRoot });
+  });
+}
+
 export default app;

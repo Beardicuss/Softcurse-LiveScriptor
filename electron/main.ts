@@ -1,6 +1,23 @@
 import { app, BrowserWindow, shell } from "electron";
 import path from "path";
 import net from "net";
+import { pathToFileURL } from "url";
+import fs from "fs";
+
+process.on("uncaughtException", (err) => {
+  try {
+    fs.writeFileSync(path.join(app.getPath("desktop"), "livescriptor-crash.log"), err.stack || err.toString());
+  } catch (e) { }
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason: any) => {
+  try {
+    fs.writeFileSync(path.join(app.getPath("desktop"), "livescriptor-rejection.log"), reason?.stack || String(reason));
+  } catch (e) { }
+  process.exit(1);
+});
+
 const isDev = !app.isPackaged;
 
 /** Find a free TCP port */
@@ -67,24 +84,20 @@ async function startApiServer(port: number) {
   process.env.PROJECTS_ROOT = path.join(userDataPath, "projects");
   process.env.DB_PATH = path.join(userDataPath, "livescriptor.db");
 
+  if (!isDev) {
+    process.env.NODE_ENV = "production";
+    process.env.STATIC_ROOT = path.join(__dirname, "..", "..", "artifacts", "livescriptor", "dist", "public");
+  }
+  process.env.ELECTRON = "true";
+
   // Dynamically import the api-server app
   // In dev: load from source via tsx
   // In production: load from bundled server
   const serverPath = isDev
-    ? path.resolve(__dirname, "..", "artifacts", "api-server", "src", "app.ts")
-    : path.resolve(__dirname, "..", "server", "index.mjs");
+    ? path.resolve(__dirname, "..", "..", "artifacts", "api-server", "src", "app.ts")
+    : path.resolve(__dirname, "..", "..", "artifacts", "api-server", "dist", "index.mjs");
 
-  const { default: appExpress } = await import(serverPath);
-
-  if (!isDev) {
-    // In production, serve the built React frontend
-    const express = await import("express");
-    const staticPath = path.join(__dirname, "..", "renderer");
-    appExpress.use(express.default.static(staticPath));
-    appExpress.get("*", (_req: any, res: any) => {
-      res.sendFile(path.join(staticPath, "index.html"));
-    });
-  }
+  const { default: appExpress } = await import(pathToFileURL(serverPath).toString());
 
   return new Promise<void>((resolve, reject) => {
     appExpress.listen(port, (err?: Error) => {
@@ -102,7 +115,10 @@ app.whenReady().then(async () => {
     const apiPort = isDev ? 3000 : await getFreePort();
     await startApiServer(apiPort);
     await createWindow(apiPort);
-  } catch (err) {
+  } catch (err: any) {
+    try {
+      fs.writeFileSync(path.join(app.getPath("desktop"), "livescriptor-startup-error.log"), err?.stack || String(err));
+    } catch (e) { }
     console.error("[Electron] Failed to start:", err);
     app.quit();
   }
