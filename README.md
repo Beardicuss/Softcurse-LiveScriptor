@@ -5,6 +5,8 @@
   
   **An advanced, self-hosted Cyberpunk Web-IDE packaged into a high-performance Windows Desktop Application.**
 
+  <img src="assets/IDE.gif" alt="LiveScriptor Interface Demo" width="800" style="border-radius: 8px; margin-top: 20px; box-shadow: 0 0 20px rgba(0,255,150,0.5);" />
+
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Electron](https://img.shields.io/badge/Electron-33.4.11-47848f?logo=electron)](https://www.electronjs.org/)
   [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20.0-43853D?logo=node.js)](https://nodejs.org/)
