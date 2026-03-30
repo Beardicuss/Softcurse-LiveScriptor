@@ -593,12 +593,8 @@ router.delete("/projects/:projectId", async (req, res): Promise<void> => {
     return;
   }
 
-  const projectDir = getProjectDir(id);
-  if (fs.existsSync(projectDir)) {
-    fs.rmSync(projectDir, { recursive: true, force: true });
-  }
-
-  res.json({ success: true, message: "Project deleted" });
+  // Only remove from LiveScriptor's database — files on disk are NOT touched
+  res.json({ success: true, message: "Project removed from LiveScriptor" });
 });
 
 export default router;

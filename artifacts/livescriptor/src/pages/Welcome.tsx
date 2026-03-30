@@ -71,7 +71,7 @@ export function Welcome() {
 
   const handleDeleteProject = async (e: React.MouseEvent, id: string, name: string) => {
     e.stopPropagation();
-    if (!confirm(`Are you sure you want to completely delete "${name}"? This will permanently wipe the project directory from your hard drive.`)) return;
+    if (!confirm(`Remove "${name}" from LiveScriptor? Your project files on disk will NOT be deleted.`)) return;
 
     try {
       await deleteProjectMutation.mutateAsync({ projectId: id });
