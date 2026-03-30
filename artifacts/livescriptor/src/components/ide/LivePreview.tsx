@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useGetFileContent } from '@workspace/api-client-react';
 import { CyberButton } from '@/components/ui/cyber-components';
-import { Play, RotateCw, Monitor, Tablet, Smartphone } from 'lucide-react';
+import { Play, RotateCw, Monitor, Tablet, Smartphone, AlertTriangle } from 'lucide-react';
 import { useIdeStore } from '@/hooks/use-ide-store';
+import { useQueryClient } from '@tanstack/react-query';
 
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
 
@@ -14,22 +15,49 @@ const DEVICE_SIZES: Record<DeviceMode, { w: string; label: string }> = {
 
 export function LivePreview({ projectId }: { projectId: string }) {
   const { openFiles } = useIdeStore();
+  const queryClient = useQueryClient();
   const [device, setDevice] = useState<DeviceMode>('desktop');
   const [srcDoc, setSrcDoc] = useState('');
   const [isBuilding, setIsBuilding] = useState(false);
+  const [previewError, setPreviewError] = useState('');
 
   const getFileState = (path: string) => openFiles.find(f => f.path === path)?.content;
 
-  const htmlQuery = useGetFileContent(projectId, { path: '/index.html' }, { query: { retry: false, queryKey: [] } as any });
-  const cssQuery  = useGetFileContent(projectId, { path: '/style.css' },  { query: { retry: false, queryKey: [] } as any });
-  const jsQuery   = useGetFileContent(projectId, { path: '/script.js' },  { query: { retry: false, queryKey: [] } as any });
+  // Fetch from API (fallbacks if editor doesn't have the file open)
+  const htmlQuery = useGetFileContent(projectId, { path: '/index.html' }, {
+    query: { retry: 1, refetchOnWindowFocus: false, queryKey: [`preview-html-${projectId}`] } as any
+  });
+  const cssQuery = useGetFileContent(projectId, { path: '/style.css' }, {
+    query: { retry: 1, refetchOnWindowFocus: false, queryKey: [`preview-css-${projectId}`] } as any
+  });
+  const jsQuery = useGetFileContent(projectId, { path: '/script.js' }, {
+    query: { retry: 1, refetchOnWindowFocus: false, queryKey: [`preview-js-${projectId}`] } as any
+  });
 
   const runPreview = useCallback(() => {
     setIsBuilding(true);
+    setPreviewError('');
+
     setTimeout(() => {
-      const rawHtml = getFileState('/index.html') ?? htmlQuery.data?.content ?? '<h1>index.html not found</h1>';
-      const css     = getFileState('/style.css')  ?? cssQuery.data?.content  ?? '';
-      const js      = getFileState('/script.js')  ?? jsQuery.data?.content   ?? '';
+      // Prefer in-editor content, fall back to API-fetched content
+      const rawHtml = getFileState('/index.html')
+        ?? getFileState('index.html')
+        ?? (htmlQuery.data as any)?.content;
+
+      if (!rawHtml) {
+        setPreviewError('No index.html found. Create an index.html file to use the Live Preview.');
+        setIsBuilding(false);
+        return;
+      }
+
+      const css = getFileState('/style.css')
+        ?? getFileState('style.css')
+        ?? (cssQuery.data as any)?.content
+        ?? '';
+      const js = getFileState('/script.js')
+        ?? getFileState('script.js')
+        ?? (jsQuery.data as any)?.content
+        ?? '';
 
       let doc = rawHtml;
 
@@ -55,14 +83,23 @@ export function LivePreview({ projectId }: { projectId: string }) {
 
       setSrcDoc(doc);
       setIsBuilding(false);
-    }, 400);
+    }, 300);
   }, [htmlQuery.data, cssQuery.data, jsQuery.data, openFiles]);
 
+  // Auto-run preview when the component mounts or when API data arrives
   useEffect(() => {
-    if (htmlQuery.isSuccess) {
-      runPreview();
+    runPreview();
+  }, [htmlQuery.data, cssQuery.data, jsQuery.data]);
+
+  // Also refresh when open files change (user types in the editor)
+  useEffect(() => {
+    const hasHtml = openFiles.some(f => f.path === '/index.html' || f.path === 'index.html');
+    if (hasHtml) {
+      const timer = setTimeout(runPreview, 800);
+      return () => clearTimeout(timer);
     }
-  }, [htmlQuery.isSuccess]);
+    return undefined;
+  }, [openFiles]);
 
   const deviceConfig = DEVICE_SIZES[device];
 
@@ -101,20 +138,29 @@ export function LivePreview({ projectId }: { projectId: string }) {
         </div>
       )}
 
-      <div className="flex-1 flex items-start justify-center overflow-auto bg-[#0a0a0a] p-4">
-        <div
-          className="h-full bg-white shadow-[0_0_30px_rgba(0,255,255,0.15)] transition-all duration-300"
-          style={{ width: deviceConfig.w, minWidth: device !== 'desktop' ? deviceConfig.w : undefined, maxWidth: '100%' }}
-        >
-          <iframe
-            key={srcDoc}
-            srcDoc={srcDoc}
-            className="w-full h-full border-none"
-            sandbox="allow-scripts allow-same-origin allow-modals allow-forms"
-            title="Live Preview"
-          />
+      {previewError ? (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-4 text-muted-foreground">
+            <AlertTriangle className="w-12 h-12 mx-auto text-secondary/60" />
+            <p className="text-sm tracking-wide">{previewError}</p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex-1 flex items-start justify-center overflow-auto bg-[#0a0a0a] p-4">
+          <div
+            className="h-full bg-white shadow-[0_0_30px_rgba(0,255,255,0.15)] transition-all duration-300"
+            style={{ width: deviceConfig.w, minWidth: device !== 'desktop' ? deviceConfig.w : undefined, maxWidth: '100%' }}
+          >
+            <iframe
+              key={srcDoc.length}
+              srcDoc={srcDoc}
+              className="w-full h-full border-none"
+              sandbox="allow-scripts allow-same-origin allow-modals allow-forms"
+              title="Live Preview"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

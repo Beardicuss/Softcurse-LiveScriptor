@@ -2,11 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Key, Globe, Bot, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 const PROVIDERS = [
-    { id: 'openai', label: 'OpenAI', url: 'https://api.openai.com/v1', defaultModel: 'gpt-4o' },
-    { id: 'openrouter', label: 'OpenRouter', url: 'https://openrouter.ai/api/v1', defaultModel: 'openai/gpt-4o' },
-    { id: 'gemini', label: 'Google Gemini', url: 'https://generativelanguage.googleapis.com/v1beta/openai', defaultModel: 'gemini-2.5-flash' },
-    { id: 'grok', label: 'xAI Grok', url: 'https://api.x.ai/v1', defaultModel: 'grok-3' },
-    { id: 'custom', label: 'Custom (OpenAI-compatible)', url: '', defaultModel: '' },
+    { id: 'openai', label: 'OpenAI', url: 'https://api.openai.com/v1', defaultModel: 'gpt-4o', local: false },
+    { id: 'openrouter', label: 'OpenRouter', url: 'https://openrouter.ai/api/v1', defaultModel: 'openai/gpt-4o', local: false },
+    { id: 'gemini', label: 'Google Gemini', url: 'https://generativelanguage.googleapis.com/v1beta/openai', defaultModel: 'gemini-2.5-flash', local: false },
+    { id: 'grok', label: 'xAI Grok', url: 'https://api.x.ai/v1', defaultModel: 'grok-3', local: false },
+    { id: 'ollama', label: 'Ollama (Local)', url: 'http://localhost:11434/v1', defaultModel: 'llama3.1', local: true },
+    { id: 'lmstudio', label: 'LM Studio (Local)', url: 'http://localhost:1234/v1', defaultModel: 'local-model', local: true },
+    { id: 'custom', label: 'Custom (OpenAI-compatible)', url: '', defaultModel: '', local: false },
 ] as const;
 
 type ProviderId = typeof PROVIDERS[number]['id'];
@@ -86,6 +88,7 @@ export function AiSettingsPanel() {
 
     const currentProvider = PROVIDERS.find(p => p.id === settings.ai_provider) || PROVIDERS[0];
     const isCustom = settings.ai_provider === 'custom';
+    const isLocal = currentProvider.local;
 
     return (
         <div>
@@ -97,14 +100,44 @@ export function AiSettingsPanel() {
                     <label className="text-sm font-mono text-foreground flex items-center gap-2">
                         <Bot className="w-4 h-4 text-primary" /> Provider
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
-                        {PROVIDERS.map(p => (
+                    <p className="text-[10px] text-muted-foreground/50 font-mono uppercase tracking-wider mb-1">Cloud Providers</p>
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                        {PROVIDERS.filter(p => !p.local && p.id !== 'custom').map(p => (
                             <button
                                 key={p.id}
                                 onClick={() => handleProviderChange(p.id)}
                                 className={`flex items-center gap-2 px-3 py-2.5 text-xs font-mono border transition-all rounded-sm ${settings.ai_provider === p.id
-                                        ? 'border-primary bg-primary/10 text-primary shadow-[0_0_8px_rgba(0,255,255,0.15)]'
-                                        : 'border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                                    ? 'border-primary bg-primary/10 text-primary shadow-[0_0_8px_rgba(0,255,255,0.15)]'
+                                    : 'border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                                    }`}
+                            >
+                                {p.label}
+                            </button>
+                        ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground/50 font-mono uppercase tracking-wider mb-1">Local LLMs</p>
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                        {PROVIDERS.filter(p => p.local).map(p => (
+                            <button
+                                key={p.id}
+                                onClick={() => handleProviderChange(p.id)}
+                                className={`flex items-center gap-2 px-3 py-2.5 text-xs font-mono border transition-all rounded-sm ${settings.ai_provider === p.id
+                                    ? 'border-green-400 bg-green-400/10 text-green-400 shadow-[0_0_8px_rgba(0,255,100,0.15)]'
+                                    : 'border-primary/20 text-muted-foreground hover:border-green-400/40 hover:text-foreground'
+                                    }`}
+                            >
+                                🖥️ {p.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        {PROVIDERS.filter(p => p.id === 'custom').map(p => (
+                            <button
+                                key={p.id}
+                                onClick={() => handleProviderChange(p.id)}
+                                className={`flex items-center gap-2 px-3 py-2.5 text-xs font-mono border transition-all rounded-sm col-span-2 ${settings.ai_provider === p.id
+                                    ? 'border-secondary bg-secondary/10 text-secondary shadow-[0_0_8px_rgba(255,107,53,0.15)]'
+                                    : 'border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-foreground'
                                     }`}
                             >
                                 {p.label}
@@ -126,7 +159,9 @@ export function AiSettingsPanel() {
                         className="w-full bg-background border border-primary/30 text-foreground text-sm font-mono px-3 py-2 rounded-sm focus:outline-none focus:border-primary hover:border-primary/60 transition-colors placeholder:text-muted-foreground/50"
                     />
                     <p className="text-[10px] text-muted-foreground/60 font-mono">
-                        Your API key is stored locally and never sent to any third party.
+                        {isLocal
+                            ? 'Local LLMs typically don\'t require an API key. Leave blank if not needed.'
+                            : 'Your API key is stored locally and never sent to any third party.'}
                     </p>
                 </div>
 
@@ -139,7 +174,7 @@ export function AiSettingsPanel() {
                         type="text"
                         value={settings.ai_base_url}
                         onChange={e => setSettings(prev => ({ ...prev, ai_base_url: e.target.value }))}
-                        disabled={!isCustom}
+                        disabled={!isCustom && !isLocal}
                         placeholder="https://api.example.com/v1"
                         className={`w-full bg-background border border-primary/30 text-sm font-mono px-3 py-2 rounded-sm focus:outline-none focus:border-primary transition-colors ${isCustom ? 'text-foreground hover:border-primary/60' : 'text-muted-foreground/60 cursor-not-allowed'
                             }`}

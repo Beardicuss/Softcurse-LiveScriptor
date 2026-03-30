@@ -12,6 +12,8 @@ const PROVIDER_URLS: Record<string, string> = {
   openrouter: "https://openrouter.ai/api/v1",
   gemini: "https://generativelanguage.googleapis.com/v1beta/openai",
   grok: "https://api.x.ai/v1",
+  ollama: "http://localhost:11434/v1",
+  lmstudio: "http://localhost:1234/v1",
 };
 
 /** Default models per provider */
@@ -20,6 +22,8 @@ const DEFAULT_MODELS: Record<string, string> = {
   openrouter: "openai/gpt-4o",
   gemini: "gemini-2.5-flash",
   grok: "grok-3",
+  ollama: "llama3.1",
+  lmstudio: "local-model",
 };
 
 /** Maximum number of tool-call loop iterations to prevent runaway chains */
@@ -68,7 +72,11 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
 
   const config = await getAiConfig();
 
-  if (!config.apiKey) {
+  // Local LLM providers (Ollama, LM Studio) don't require API keys
+  const LOCAL_PROVIDERS = ["ollama", "lmstudio"];
+  const isLocal = LOCAL_PROVIDERS.includes(config.provider);
+
+  if (!config.apiKey && !isLocal) {
     res.status(400).json({
       error: "no_api_key",
       message:
@@ -79,7 +87,7 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
 
   const openai = new OpenAI({
     baseURL: config.baseURL,
-    apiKey: config.apiKey,
+    apiKey: config.apiKey || "not-needed",
   });
 
   // ── Build the system prompt with all available context ──
