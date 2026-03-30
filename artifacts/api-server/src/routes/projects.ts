@@ -208,6 +208,287 @@ npm start
 \`\`\`
 `,
   },
+  typescript: {
+    "src/index.ts": `console.log("Hello from TypeScript!");
+
+interface AppConfig {
+  name: string;
+  port: number;
+  debug: boolean;
+}
+
+const config: AppConfig = {
+  name: "LiveScriptor TS App",
+  port: 3000,
+  debug: true,
+};
+
+function start(config: AppConfig): void {
+  console.log(\`Starting \${config.name} on port \${config.port}\`);
+  if (config.debug) console.log("Debug mode enabled");
+}
+
+start(config);
+`,
+    "tsconfig.json": `{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"]
+}`,
+    "package.json": `{
+  "name": "ts-app",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}`,
+  },
+  python: {
+    "main.py": `"""LiveScriptor Python Project"""
+
+def greet(name: str) -> str:
+    return f"Hello, {name}! Welcome to LiveScriptor."
+
+def fibonacci(n: int) -> list[int]:
+    """Generate first n Fibonacci numbers."""
+    fib = [0, 1]
+    for i in range(2, n):
+        fib.append(fib[i-1] + fib[i-2])
+    return fib[:n]
+
+if __name__ == "__main__":
+    print(greet("Developer"))
+    print(f"First 10 Fibonacci numbers: {fibonacci(10)}")
+`,
+    "requirements.txt": `# Add your dependencies here
+# requests>=2.28.0
+# flask>=2.3.0
+`,
+    "README.md": `# Python Project
+
+Created with LiveScriptor IDE.
+
+## Running
+
+\\\`\\\`\\\`bash
+python main.py
+\\\`\\\`\\\`
+`,
+  },
+  nextjs: {
+    "pages/index.jsx": `export default function Home() {
+  return (
+    <div style={{ textAlign: 'center', padding: '4rem', fontFamily: 'monospace', background: '#020202', minHeight: '100vh', color: '#e0e0e0' }}>
+      <h1 style={{ color: '#00ffff', fontSize: '3rem' }}>Next.js App</h1>
+      <p style={{ color: '#888' }}>Created with LiveScriptor IDE</p>
+      <p style={{ marginTop: '2rem' }}>Edit <code>pages/index.jsx</code> to get started.</p>
+    </div>
+  );
+}
+`,
+    "package.json": `{
+  "name": "nextjs-app",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  }
+}`,
+  },
+  vue: {
+    "index.html": `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vue App</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>`,
+    "src/main.js": `import { createApp } from 'vue';
+import App from './App.vue';
+
+createApp(App).mount('#app');
+`,
+    "src/App.vue": `<template>
+  <div class="app">
+    <h1>{{ title }}</h1>
+    <p>Count: {{ count }}</p>
+    <button @click="count++">Increment</button>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+
+const title = ref('Vue + LiveScriptor');
+const count = ref(0);
+</script>
+
+<style scoped>
+.app {
+  text-align: center;
+  padding: 2rem;
+  font-family: monospace;
+  background: #020202;
+  min-height: 100vh;
+  color: #e0e0e0;
+}
+h1 { color: #42b883; }
+button {
+  padding: 0.5rem 1.5rem;
+  border: 1px solid #42b883;
+  background: transparent;
+  color: #42b883;
+  cursor: pointer;
+  font-family: monospace;
+}
+button:hover {
+  background: #42b883;
+  color: #020202;
+}
+</style>
+`,
+    "package.json": `{
+  "name": "vue-app",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "@vitejs/plugin-vue": "^5.0.0"
+  }
+}`,
+  },
+  game: {
+    "index.html": `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML5 Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="game" width="800" height="600"></canvas>
+  <script src="game.js"></script>
+</body>
+</html>`,
+    "style.css": `* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+canvas {
+  border: 2px solid #00ffff;
+  box-shadow: 0 0 30px rgba(0,255,255,0.3);
+}`,
+    "game.js": `const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+// Game state
+let player = { x: 400, y: 500, w: 40, h: 40, speed: 5, color: '#00ffff' };
+let stars = [];
+let score = 0;
+let keys = {};
+
+// Generate stars
+for (let i = 0; i < 50; i++) {
+  stars.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    size: Math.random() * 2 + 1,
+    speed: Math.random() * 2 + 0.5,
+  });
+}
+
+// Input
+document.addEventListener('keydown', e => keys[e.key] = true);
+document.addEventListener('keyup', e => keys[e.key] = false);
+
+function update() {
+  if (keys['ArrowLeft'] || keys['a'])  player.x -= player.speed;
+  if (keys['ArrowRight'] || keys['d']) player.x += player.speed;
+  if (keys['ArrowUp'] || keys['w'])    player.y -= player.speed;
+  if (keys['ArrowDown'] || keys['s'])  player.y += player.speed;
+
+  player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
+  player.y = Math.max(0, Math.min(canvas.height - player.h, player.y));
+
+  stars.forEach(s => {
+    s.y += s.speed;
+    if (s.y > canvas.height) {
+      s.y = -5;
+      s.x = Math.random() * canvas.width;
+      score++;
+    }
+  });
+}
+
+function draw() {
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Stars
+  ctx.fillStyle = '#ffffff';
+  stars.forEach(s => {
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Player
+  ctx.fillStyle = player.color;
+  ctx.shadowColor = player.color;
+  ctx.shadowBlur = 15;
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+  ctx.shadowBlur = 0;
+
+  // Score
+  ctx.fillStyle = '#00ffff';
+  ctx.font = '16px monospace';
+  ctx.fillText('Score: ' + score, 10, 25);
+  ctx.fillText('WASD / Arrow keys to move', 10, canvas.height - 15);
+}
+
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+console.log('Game started! Use WASD or Arrow keys.');
+`,
+  },
 };
 
 router.get("/projects", async (req, res): Promise<void> => {

@@ -28,6 +28,10 @@ export const ProjectType = {
   svelte: "svelte",
   node: "node",
   fullstack: "fullstack",
+  typescript: "typescript",
+  python: "python",
+  nextjs: "nextjs",
+  game: "game",
 } as const;
 
 export interface Project {
@@ -49,6 +53,10 @@ export const CreateProjectRequestType = {
   svelte: "svelte",
   node: "node",
   fullstack: "fullstack",
+  typescript: "typescript",
+  python: "python",
+  nextjs: "nextjs",
+  game: "game",
 } as const;
 
 export interface CreateProjectRequest {

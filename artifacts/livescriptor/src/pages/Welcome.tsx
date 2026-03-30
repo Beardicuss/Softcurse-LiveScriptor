@@ -8,8 +8,13 @@ import { format } from 'date-fns';
 
 const PROJECT_TYPES = [
   { id: 'vanilla', label: 'Vanilla', icon: Globe, desc: 'HTML + CSS + JS' },
-  { id: 'react', label: 'React', icon: Code2, desc: 'React + Vite starter' },
-  { id: 'node', label: 'Node.js', icon: Server, desc: 'Express / Node server' },
+  { id: 'react', label: 'React', icon: Code2, desc: 'React + Vite' },
+  { id: 'node', label: 'Node.js', icon: Server, desc: 'Express server' },
+  { id: 'typescript', label: 'TypeScript', icon: Code2, desc: 'TS + Node' },
+  { id: 'python', label: 'Python', icon: Terminal, desc: 'Python script' },
+  { id: 'nextjs', label: 'Next.js', icon: Globe, desc: 'React SSR' },
+  { id: 'vue', label: 'Vue', icon: Code2, desc: 'Vue + Vite' },
+  { id: 'game', label: 'HTML5 Game', icon: Activity, desc: 'Canvas game' },
 ] as const;
 
 type ProjectType = typeof PROJECT_TYPES[number]['id'];
@@ -79,11 +84,11 @@ export function Welcome() {
 
   return (
     <div className="min-h-screen w-full bg-background relative overflow-hidden flex flex-col items-center justify-center font-mono">
-      <div className="absolute inset-0 bg-[url('/images/cyber-bg.png')] bg-cover bg-center opacity-30 mix-blend-screen cyber-bg-pan origin-center" />
+      <div className="absolute inset-0 bg-[url('/images/cyber-bg.png')] bg-cover bg-center opacity-30 mix-blend-screen cyber-bg-pan origin-center pointer-events-none" />
 
       {/* 3D Floor Grid */}
       <div
-        className="absolute inset-0 cyber-grid opacity-30"
+        className="absolute inset-0 cyber-grid opacity-30 pointer-events-none"
         style={{
           transform: 'perspective(600px) rotateX(60deg) translateY(100px) scale(2.5)',
           transformOrigin: 'bottom center',
@@ -166,7 +171,7 @@ export function Welcome() {
 
                 <div className="space-y-2">
                   <label className="text-xs text-primary uppercase tracking-wider">Project Type</label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-4 gap-2">
                     {PROJECT_TYPES.map(({ id, label, icon: Icon, desc }) => (
                       <button
                         key={id}
