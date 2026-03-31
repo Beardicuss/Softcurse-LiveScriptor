@@ -37,6 +37,32 @@ export function Welcome() {
   const [isDeploying, setIsDeploying] = useState(false);
   const queryClient = useQueryClient();
 
+  // Safely extracts an error message from a non-OK Response.
+  // Falls back to `fallback` if the body is not JSON (e.g. an HTML error page).
+  const safeErrorMessage = async (response: Response, fallback: string): Promise<string> => {
+    try {
+      const contentType = response.headers.get('content-type') ?? '';
+      if (!contentType.includes('application/json')) return fallback;
+      const body = await response.json();
+      return body?.message || fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
+  const handleBrowseFolder = async () => {
+    try {
+      const res = await fetch('/api/projects/browse-folder');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.cancelled && data.path) {
+        setProjectLocation(data.path);
+      }
+    } catch {
+      // Dialog unavailable in this environment — silently ignore
+    }
+  };
+
   // Fetch the default project location on mount
   React.useEffect(() => {
     fetch('/api/projects/default-location')
@@ -55,8 +81,7 @@ export function Welcome() {
         body: JSON.stringify({ url: gitUrl })
       });
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Import failed');
+        throw new Error(await safeErrorMessage(res, 'Import failed'));
       }
       const project = await res.json();
       await queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -82,8 +107,7 @@ export function Welcome() {
         }),
       });
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Failed to create project');
+        throw new Error(await safeErrorMessage(res, 'Failed to create project'));
       }
       const proj = await res.json();
       await queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -199,11 +223,22 @@ export function Welcome() {
                   <label className="text-xs text-primary uppercase tracking-wider flex items-center gap-1.5">
                     <FolderOpen className="w-3.5 h-3.5" /> Storage Location
                   </label>
-                  <CyberInput
-                    placeholder={defaultLocation || 'Project directory path...'}
-                    value={projectLocation}
-                    onChange={e => setProjectLocation(e.target.value)}
-                  />
+                  <div className="flex gap-2">
+                    <CyberInput
+                      className="flex-1"
+                      placeholder={defaultLocation || 'Project directory path...'}
+                      value={projectLocation}
+                      onChange={e => setProjectLocation(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleBrowseFolder}
+                      title="Browse for folder"
+                      className="px-3 border border-primary/40 text-primary hover:bg-primary/10 hover:border-primary transition-all text-sm shrink-0"
+                    >
+                      <FolderOpen className="w-4 h-4" />
+                    </button>
+                  </div>
                   <p className="text-muted-foreground text-[10px] mt-1">
                     Project will be created as a subfolder here. Leave default or enter a custom path.
                   </p>

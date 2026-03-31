@@ -610,6 +610,71 @@ router.post("/projects/import", async (req, res): Promise<void> => {
   }
 });
 
+/**
+ * Opens a native OS folder-picker dialog and returns the chosen path.
+ * Must be registered BEFORE /projects/:projectId to avoid Express treating
+ * "browse-folder" as a project ID.
+ */
+router.get("/projects/browse-folder", async (_req, res): Promise<void> => {
+  const platform = process.platform;
+
+  try {
+    let chosenPath: string | null = null;
+
+    if (platform === "win32") {
+      // PowerShell WinForms folder browser
+      const ps = [
+        "Add-Type -AssemblyName System.Windows.Forms;",
+        "$d = New-Object System.Windows.Forms.FolderBrowserDialog;",
+        "$d.Description = 'Select project location';",
+        "$d.ShowNewFolderButton = $true;",
+        "if ($d.ShowDialog() -eq 'OK') { Write-Output $d.SelectedPath }",
+      ].join(" ");
+      const { stdout } = await execAsync(`powershell -NoProfile -Command "${ps}"`);
+      const trimmed = stdout.trim();
+      if (trimmed) chosenPath = trimmed;
+
+    } else if (platform === "darwin") {
+      // macOS: osascript choose folder
+      const { stdout } = await execAsync(
+        `osascript -e 'POSIX path of (choose folder with prompt "Select project location")'`
+      );
+      const trimmed = stdout.trim().replace(/\/$/, ""); // strip trailing slash
+      if (trimmed) chosenPath = trimmed;
+
+    } else {
+      // Linux: try zenity, fall back to kdialog
+      try {
+        const { stdout } = await execAsync(
+          "zenity --file-selection --directory --title='Select project location'"
+        );
+        const trimmed = stdout.trim();
+        if (trimmed) chosenPath = trimmed;
+      } catch {
+        const { stdout } = await execAsync(
+          "kdialog --getexistingdirectory $HOME"
+        );
+        const trimmed = stdout.trim();
+        if (trimmed) chosenPath = trimmed;
+      }
+    }
+
+    if (chosenPath) {
+      res.json({ path: chosenPath, cancelled: false });
+    } else {
+      res.json({ path: null, cancelled: true });
+    }
+  } catch (err: any) {
+    // Exit code 1 = user cancelled the dialog — not a real error
+    if (err.code === 1) {
+      res.json({ path: null, cancelled: true });
+    } else {
+      console.error("browse-folder error:", err);
+      res.status(500).json({ error: "dialog_failed", message: err.message });
+    }
+  }
+});
+
 router.get("/projects/:projectId", async (req, res): Promise<void> => {
   const id = Array.isArray(req.params.projectId) ? req.params.projectId[0] : req.params.projectId;
   const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, id));
