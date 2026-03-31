@@ -17,6 +17,15 @@ function getProjectDir(projectId: string): string {
   return path.join(PROJECTS_ROOT, projectId);
 }
 
+/** Resolve the actual directory for a project, checking the DB for a custom location */
+async function resolveProjectDir(projectId: string): Promise<string> {
+  const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, projectId));
+  if (project?.location) {
+    return project.location;
+  }
+  return path.join(PROJECTS_ROOT, projectId);
+}
+
 function ensureProjectsRoot() {
   if (!fs.existsSync(PROJECTS_ROOT)) {
     fs.mkdirSync(PROJECTS_ROOT, { recursive: true });
@@ -497,20 +506,41 @@ router.get("/projects", async (req, res): Promise<void> => {
 });
 
 router.post("/projects", async (req, res): Promise<void> => {
-  const { name, description, type = "vanilla" } = req.body;
+  const { name, description, type = "vanilla", location } = req.body;
 
   if (!name || typeof name !== "string") {
     res.status(400).json({ error: "bad_request", message: "name is required" });
     return;
   }
 
+  // Determine the project directory
+  let projectDir: string;
+  let storedLocation: string | null = null;
+
+  if (location && typeof location === "string" && location.trim()) {
+    // User chose a custom location — project lives at <location>/<name>
+    projectDir = path.resolve(location.trim(), name.replace(/[^a-zA-Z0-9_\-. ]/g, "_"));
+    storedLocation = projectDir;
+  } else {
+    // Default: user-projects/<id> (we'll set the path after DB insert)
+    projectDir = "";
+  }
+
   const [project] = await db
     .insert(projectsTable)
-    .values({ name, description, type })
+    .values({ name, description, type, location: storedLocation })
     .returning();
 
-  ensureProjectsRoot();
-  const projectDir = getProjectDir(project.id);
+  if (!projectDir) {
+    ensureProjectsRoot();
+    projectDir = getProjectDir(project.id);
+  }
+
+  // If location was custom, update the DB with the final resolved path
+  if (storedLocation) {
+    await db.update(projectsTable).set({ location: projectDir }).where(eq(projectsTable.id, project.id));
+  }
+
   fs.mkdirSync(projectDir, { recursive: true });
 
   const templates = STARTER_TEMPLATES[type] || STARTER_TEMPLATES.vanilla;
@@ -521,6 +551,11 @@ router.post("/projects", async (req, res): Promise<void> => {
   }
 
   res.status(201).json(project);
+});
+
+/** Returns the default projects root so the frontend can show it */
+router.get("/projects/default-location", async (_req, res): Promise<void> => {
+  res.json({ path: PROJECTS_ROOT });
 });
 
 router.post("/projects/import", async (req, res): Promise<void> => {

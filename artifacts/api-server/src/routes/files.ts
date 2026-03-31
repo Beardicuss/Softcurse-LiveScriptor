@@ -4,6 +4,8 @@ import fs from "fs";
 import { exec } from "child_process";
 import { promisify } from "util";
 import os from "os";
+import { db, projectsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 const execAsync = promisify(exec);
@@ -11,6 +13,15 @@ const execAsync = promisify(exec);
 const PROJECTS_ROOT = process.env.PROJECTS_ROOT || path.join(process.cwd(), "user-projects");
 
 function getProjectDir(projectId: string): string {
+  return path.join(PROJECTS_ROOT, projectId);
+}
+
+/** Resolve directory checking DB for custom location first */
+async function resolveProjectDir(projectId: string): Promise<string> {
+  const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, projectId));
+  if (project?.location) {
+    return project.location;
+  }
   return path.join(PROJECTS_ROOT, projectId);
 }
 
@@ -62,8 +73,8 @@ function buildFileTree(dirPath: string, basePath: string = "/"): any[] {
   });
 }
 
-function resolveSafePath(projectId: string, filePath: string): string | null {
-  const projectDir = getProjectDir(projectId);
+async function resolveSafePath(projectId: string, filePath: string): Promise<string | null> {
+  const projectDir = await resolveProjectDir(projectId);
   const normalizedPath = path.normalize(filePath).replace(/^\//, "");
   const fullPath = path.join(projectDir, normalizedPath);
 
@@ -73,7 +84,7 @@ function resolveSafePath(projectId: string, filePath: string): string | null {
 
 router.get("/projects/:projectId/files", async (req, res): Promise<void> => {
   const id = Array.isArray(req.params.projectId) ? req.params.projectId[0] : req.params.projectId;
-  const projectDir = getProjectDir(id);
+  const projectDir = await resolveProjectDir(id);
 
   if (!fs.existsSync(projectDir)) {
     res.json([]);
@@ -93,7 +104,7 @@ router.post("/projects/:projectId/files", async (req, res): Promise<void> => {
     return;
   }
 
-  const fullPath = resolveSafePath(id, filePath);
+  const fullPath = await resolveSafePath(id, filePath);
   if (!fullPath) {
     res.status(400).json({ error: "bad_request", message: "Invalid path" });
     return;
@@ -126,7 +137,7 @@ router.get("/projects/:projectId/files/content", async (req, res): Promise<void>
     return;
   }
 
-  const fullPath = resolveSafePath(id, filePath);
+  const fullPath = await resolveSafePath(id, filePath);
   if (!fullPath) {
     res.status(400).json({ error: "bad_request", message: "Invalid path" });
     return;
@@ -152,7 +163,7 @@ router.put("/projects/:projectId/files/content", async (req, res): Promise<void>
     return;
   }
 
-  const fullPath = resolveSafePath(id, filePath);
+  const fullPath = await resolveSafePath(id, filePath);
   if (!fullPath) {
     res.status(400).json({ error: "bad_request", message: "Invalid path" });
     return;
@@ -173,7 +184,7 @@ router.post("/projects/:projectId/files/delete", async (req, res): Promise<void>
     return;
   }
 
-  const fullPath = resolveSafePath(id, filePath);
+  const fullPath = await resolveSafePath(id, filePath);
   if (!fullPath) {
     res.status(400).json({ error: "bad_request", message: "Invalid path" });
     return;
@@ -203,8 +214,8 @@ router.post("/projects/:projectId/files/rename", async (req, res): Promise<void>
     return;
   }
 
-  const fullOldPath = resolveSafePath(id, oldPath);
-  const fullNewPath = resolveSafePath(id, newPath);
+  const fullOldPath = await resolveSafePath(id, oldPath);
+  const fullNewPath = await resolveSafePath(id, newPath);
 
   if (!fullOldPath || !fullNewPath) {
     res.status(400).json({ error: "bad_request", message: "Invalid path" });
@@ -224,7 +235,7 @@ router.post("/projects/:projectId/files/rename", async (req, res): Promise<void>
 
 router.get("/projects/:projectId/download", async (req, res): Promise<void> => {
   const id = Array.isArray(req.params.projectId) ? req.params.projectId[0] : req.params.projectId;
-  const projectDir = getProjectDir(id);
+  const projectDir = await resolveProjectDir(id);
 
   if (!fs.existsSync(projectDir)) {
     res.status(404).json({ error: "not_found", message: "Project not found" });

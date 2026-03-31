@@ -8,6 +8,7 @@ export const projectsTable = sqliteTable("projects", {
   name: text("name").notNull(),
   description: text("description"),
   type: text("type").notNull().default("vanilla"),
+  location: text("location"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()).$onUpdate(() => new Date()),
 });

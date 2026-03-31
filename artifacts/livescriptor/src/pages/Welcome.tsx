@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { useListProjects, useCreateProject, useDeleteProject } from '@workspace/api-client-react';
 import { CyberButton, CyberPanel, CyberInput } from '@/components/ui/cyber-components';
-import { FolderGit2, Terminal, Plus, ArrowRight, Activity, Code2, Server, Globe, Trash2 } from 'lucide-react';
+import { FolderGit2, Terminal, Plus, ArrowRight, Activity, Code2, Server, Globe, Trash2, FolderOpen } from 'lucide-react';
 import { format } from 'date-fns';
 
 const PROJECT_TYPES = [
@@ -28,11 +28,22 @@ export function Welcome() {
   const [isCreating, setIsCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [projectType, setProjectType] = useState<ProjectType>('vanilla');
+  const [projectLocation, setProjectLocation] = useState('');
+  const [defaultLocation, setDefaultLocation] = useState('');
 
   const [isImporting, setIsImporting] = useState(false);
   const [gitUrl, setGitUrl] = useState('');
   const [importingGit, setImportingGit] = useState(false);
+  const [isDeploying, setIsDeploying] = useState(false);
   const queryClient = useQueryClient();
+
+  // Fetch the default project location on mount
+  React.useEffect(() => {
+    fetch('/api/projects/default-location')
+      .then(r => r.json())
+      .then(d => { setDefaultLocation(d.path); setProjectLocation(d.path); })
+      .catch(() => { });
+  }, []);
 
   const handleImportGit = async () => {
     if (!gitUrl) return;
@@ -59,13 +70,28 @@ export function Welcome() {
 
   const handleCreateProject = async () => {
     if (!newProjectName) return;
+    setIsDeploying(true);
     try {
-      const proj = await createProjectMutation.mutateAsync({
-        data: { name: newProjectName, type: projectType }
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newProjectName,
+          type: projectType,
+          location: projectLocation || undefined,
+        }),
       });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to create project');
+      }
+      const proj = await res.json();
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
       setLocation(`/project/${proj.id}`);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setIsDeploying(false);
     }
   };
 
@@ -170,6 +196,20 @@ export function Welcome() {
                 </div>
 
                 <div className="space-y-2">
+                  <label className="text-xs text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <FolderOpen className="w-3.5 h-3.5" /> Storage Location
+                  </label>
+                  <CyberInput
+                    placeholder={defaultLocation || 'Project directory path...'}
+                    value={projectLocation}
+                    onChange={e => setProjectLocation(e.target.value)}
+                  />
+                  <p className="text-muted-foreground text-[10px] mt-1">
+                    Project will be created as a subfolder here. Leave default or enter a custom path.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
                   <label className="text-xs text-primary uppercase tracking-wider">Project Type</label>
                   <div className="grid grid-cols-4 gap-2">
                     {PROJECT_TYPES.map(({ id, label, icon: Icon, desc }) => (
@@ -192,7 +232,7 @@ export function Welcome() {
                 <div className="flex gap-2 mt-2">
                   <CyberButton
                     variant="ghost"
-                    onClick={() => { setIsCreating(false); setNewProjectName(''); setProjectType('vanilla'); }}
+                    onClick={() => { setIsCreating(false); setNewProjectName(''); setProjectType('vanilla'); setProjectLocation(defaultLocation); }}
                     className="flex-1"
                   >
                     Abort
@@ -200,9 +240,9 @@ export function Welcome() {
                   <CyberButton
                     onClick={handleCreateProject}
                     className="flex-1"
-                    disabled={createProjectMutation.isPending || !newProjectName}
+                    disabled={isDeploying || !newProjectName}
                   >
-                    {createProjectMutation.isPending ? 'Executing...' : 'Deploy'}
+                    {isDeploying ? 'Deploying...' : 'Deploy'}
                   </CyberButton>
                 </div>
               </div>
