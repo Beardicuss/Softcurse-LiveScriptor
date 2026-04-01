@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/script_1774471493283.png" alt="LiveScriptor Logo" width="128" />
+  <img src="assets/livescriptor.png" alt="LiveScriptor Banner" width="800" />
   
   # Softcurse LiveScriptor
   
