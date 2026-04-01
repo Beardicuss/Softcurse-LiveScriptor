@@ -37,13 +37,21 @@ export function Welcome() {
   const [isDeploying, setIsDeploying] = useState(false);
   const queryClient = useQueryClient();
 
-  // Safely extracts an error message from a non-OK Response.
-  // Falls back to `fallback` if the body is not JSON (e.g. an HTML error page).
-  const safeErrorMessage = async (response: Response, fallback: string): Promise<string> => {
+  // Fetch the default project location on mount
+  React.useEffect(() => {
+    fetch('/api/projects/default-location')
+      .then(r => r.json())
+      .then(d => { setDefaultLocation(d.path); setProjectLocation(d.path); })
+      .catch(() => { });
+  }, []);
+
+  /** Safely parse a JSON error body — returns a fallback message if the server
+   *  returns HTML (e.g. a 404/500 page) instead of JSON. */
+  const safeErrorMessage = async (res: Response, fallback: string): Promise<string> => {
     try {
-      const contentType = response.headers.get('content-type') ?? '';
+      const contentType = res.headers.get('content-type') ?? '';
       if (!contentType.includes('application/json')) return fallback;
-      const body = await response.json();
+      const body = await res.json();
       return body?.message || fallback;
     } catch {
       return fallback;
@@ -55,21 +63,11 @@ export function Welcome() {
       const res = await fetch('/api/projects/browse-folder');
       if (!res.ok) return;
       const data = await res.json();
-      if (!data.cancelled && data.path) {
-        setProjectLocation(data.path);
-      }
+      if (data.path) setProjectLocation(data.path);
     } catch {
-      // Dialog unavailable in this environment — silently ignore
+      // Dialog not available — just let the user type the path manually
     }
   };
-
-  // Fetch the default project location on mount
-  React.useEffect(() => {
-    fetch('/api/projects/default-location')
-      .then(r => r.json())
-      .then(d => { setDefaultLocation(d.path); setProjectLocation(d.path); })
-      .catch(() => { });
-  }, []);
 
   const handleImportGit = async () => {
     if (!gitUrl) return;
@@ -81,7 +79,8 @@ export function Welcome() {
         body: JSON.stringify({ url: gitUrl })
       });
       if (!res.ok) {
-        throw new Error(await safeErrorMessage(res, 'Import failed'));
+        const message = await safeErrorMessage(res, 'Import failed');
+        throw new Error(message);
       }
       const project = await res.json();
       await queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -107,7 +106,8 @@ export function Welcome() {
         }),
       });
       if (!res.ok) {
-        throw new Error(await safeErrorMessage(res, 'Failed to create project'));
+        const message = await safeErrorMessage(res, 'Failed to create project');
+        throw new Error(message);
       }
       const proj = await res.json();
       await queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -225,16 +225,16 @@ export function Welcome() {
                   </label>
                   <div className="flex gap-2">
                     <CyberInput
-                      className="flex-1"
                       placeholder={defaultLocation || 'Project directory path...'}
                       value={projectLocation}
                       onChange={e => setProjectLocation(e.target.value)}
+                      className="flex-1"
                     />
                     <button
                       type="button"
                       onClick={handleBrowseFolder}
                       title="Browse for folder"
-                      className="px-3 border border-primary/40 text-primary hover:bg-primary/10 hover:border-primary transition-all text-sm shrink-0"
+                      className="shrink-0 px-3 border border-primary/40 text-primary hover:bg-primary/10 hover:border-primary transition-all"
                     >
                       <FolderOpen className="w-4 h-4" />
                     </button>

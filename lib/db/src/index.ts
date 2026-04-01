@@ -27,9 +27,20 @@ sqlite.exec(`
     name TEXT NOT NULL,
     description TEXT,
     type TEXT NOT NULL DEFAULT 'vanilla',
+    location TEXT,
     created_at INTEGER NOT NULL DEFAULT (unixepoch()),
     updated_at INTEGER NOT NULL DEFAULT (unixepoch())
   );
+`);
+
+// Auto-migrate: Add location column if running on an older database
+try {
+  sqlite.exec(`ALTER TABLE projects ADD COLUMN location TEXT;`);
+} catch (e) {
+  // Ignore error if column already exists
+}
+
+sqlite.exec(`
 
   CREATE TABLE IF NOT EXISTS conversations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

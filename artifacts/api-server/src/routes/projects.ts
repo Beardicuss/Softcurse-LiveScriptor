@@ -3,8 +3,7 @@ import { db, projectsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
-import { exec } from "child_process";
+import { exec, execSync } from "child_process";
 import { promisify } from "util";
 
 const execAsync = promisify(exec);
@@ -610,67 +609,61 @@ router.post("/projects/import", async (req, res): Promise<void> => {
   }
 });
 
-/**
- * Opens a native OS folder-picker dialog and returns the chosen path.
- * Must be registered BEFORE /projects/:projectId to avoid Express treating
- * "browse-folder" as a project ID.
- */
+/** Opens a native OS folder-picker dialog and returns the selected path */
 router.get("/projects/browse-folder", async (_req, res): Promise<void> => {
   const platform = process.platform;
 
   try {
-    let chosenPath: string | null = null;
+    let selectedPath: string | null = null;
 
     if (platform === "win32") {
-      // PowerShell WinForms folder browser
-      const ps = [
-        "Add-Type -AssemblyName System.Windows.Forms;",
-        "$d = New-Object System.Windows.Forms.FolderBrowserDialog;",
-        "$d.Description = 'Select project location';",
-        "$d.ShowNewFolderButton = $true;",
-        "if ($d.ShowDialog() -eq 'OK') { Write-Output $d.SelectedPath }",
-      ].join(" ");
-      const { stdout } = await execAsync(`powershell -NoProfile -Command "${ps}"`);
-      const trimmed = stdout.trim();
-      if (trimmed) chosenPath = trimmed;
-
+      // PowerShell folder browser dialog
+      const ps = `powershell -NoProfile -Command "` +
+        `Add-Type -AssemblyName System.Windows.Forms; ` +
+        `$d = New-Object System.Windows.Forms.FolderBrowserDialog; ` +
+        `$d.Description = 'Select project storage location'; ` +
+        `$d.ShowNewFolderButton = $true; ` +
+        `if ($d.ShowDialog() -eq 'OK') { Write-Output $d.SelectedPath }"`;
+      const result = execSync(ps, { encoding: "utf-8", timeout: 60000 }).trim();
+      if (result) selectedPath = result;
     } else if (platform === "darwin") {
-      // macOS: osascript choose folder
-      const { stdout } = await execAsync(
-        `osascript -e 'POSIX path of (choose folder with prompt "Select project location")'`
-      );
-      const trimmed = stdout.trim().replace(/\/$/, ""); // strip trailing slash
-      if (trimmed) chosenPath = trimmed;
-
+      // macOS AppleScript dialog
+      const script = `osascript -e 'POSIX path of (choose folder with prompt "Select project storage location")'`;
+      const result = execSync(script, { encoding: "utf-8", timeout: 60000 }).trim();
+      // AppleScript returns path with trailing slash — strip it
+      if (result) selectedPath = result.replace(/\/$/, "");
     } else {
-      // Linux: try zenity, fall back to kdialog
+      // Linux — try zenity first, fall back to kdialog
       try {
-        const { stdout } = await execAsync(
-          "zenity --file-selection --directory --title='Select project location'"
-        );
-        const trimmed = stdout.trim();
-        if (trimmed) chosenPath = trimmed;
+        const result = execSync("zenity --file-selection --directory --title='Select project storage location'", {
+          encoding: "utf-8", timeout: 60000,
+        }).trim();
+        if (result) selectedPath = result;
       } catch {
-        const { stdout } = await execAsync(
-          "kdialog --getexistingdirectory $HOME"
-        );
-        const trimmed = stdout.trim();
-        if (trimmed) chosenPath = trimmed;
+        try {
+          const result = execSync("kdialog --getexistingdirectory $HOME --title 'Select project storage location'", {
+            encoding: "utf-8", timeout: 60000,
+          }).trim();
+          if (result) selectedPath = result;
+        } catch {
+          res.status(501).json({ error: "not_supported", message: "No supported folder dialog found (install zenity or kdialog)." });
+          return;
+        }
       }
     }
 
-    if (chosenPath) {
-      res.json({ path: chosenPath, cancelled: false });
+    if (selectedPath) {
+      res.json({ path: selectedPath });
     } else {
+      // User cancelled the dialog
       res.json({ path: null, cancelled: true });
     }
   } catch (err: any) {
-    // Exit code 1 = user cancelled the dialog — not a real error
-    if (err.code === 1) {
+    // User cancelled (non-zero exit) or dialog not available
+    if (err.status === 1 || err.code === 1) {
       res.json({ path: null, cancelled: true });
     } else {
-      console.error("browse-folder error:", err);
-      res.status(500).json({ error: "dialog_failed", message: err.message });
+      res.status(500).json({ error: "dialog_error", message: err.message ?? "Failed to open folder dialog" });
     }
   }
 });

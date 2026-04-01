@@ -56,16 +56,26 @@ export function LivePreview({ projectId }: { projectId: string }) {
         ?? '';
       const js = getFileState('/script.js')
         ?? getFileState('script.js')
+        ?? getFileState('/game.js')
+        ?? getFileState('game.js')
         ?? (jsQuery.data as any)?.content
         ?? '';
 
       let doc = rawHtml;
 
-      // Remove external link/script refs so we can inline them safely
-      doc = doc.replace(/<link[^>]+rel=["']stylesheet["'][^>]*>/gi, '');
-      doc = doc.replace(/<script[^>]+src=["'][^"']*["'][^>]*><\/script>/gi, '');
+      // Inject <base> tag so relative assets (images, etc) load from the server
+      const baseTag = `<base href="${window.location.origin}/api/projects/${projectId}/preview/">`;
+      if (/<head>/i.test(doc)) {
+        doc = doc.replace(/<head>/i, `<head>\n${baseTag}`);
+      } else {
+        doc = baseTag + doc;
+      }
 
-      // Inject CSS before </head>, or prepend <style> if no </head>
+      // Remove external link/script refs for the specific files we are inlining
+      doc = doc.replace(/<link[^>]+href=["'](style\.css|\/style\.css)["'][^>]*>/gi, '');
+      doc = doc.replace(/<script[^>]+src=["'](script\.js|\/script\.js|game\.js|\/game\.js)["'][^>]*><\/script>/gi, '');
+
+      // Inject CSS
       const styleTag = css ? `<style>${css}</style>` : '';
       if (/<\/head>/i.test(doc)) {
         doc = doc.replace(/<\/head>/i, `${styleTag}</head>`);
@@ -73,7 +83,7 @@ export function LivePreview({ projectId }: { projectId: string }) {
         doc = styleTag + doc;
       }
 
-      // Inject JS before </body>, or append if no </body>
+      // Inject JS
       const scriptTag = js ? `<script>\ntry{\n${js}\n}catch(e){console.error(e);}\n</script>` : '';
       if (/<\/body>/i.test(doc)) {
         doc = doc.replace(/<\/body>/i, `${scriptTag}</body>`);

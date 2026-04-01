@@ -1,11 +1,11 @@
-import { Router, type IRouter } from "express";
+import express, { Router, type IRouter } from "express";
 import path from "path";
 import fs from "fs";
-import { exec } from "child_process";
-import { promisify } from "util";
 import os from "os";
 import { db, projectsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { exec } from "child_process";
+import { promisify } from "util";
 
 const router: IRouter = Router();
 const execAsync = promisify(exec);
@@ -268,6 +268,21 @@ router.get("/projects/:projectId/download", async (req, res): Promise<void> => {
   } catch (err: any) {
     try { fs.unlinkSync(tmpZip); } catch { }
     res.status(500).json({ error: "zip_failed", message: err.message });
+  }
+});
+
+// Serve project files for live preview
+router.use("/projects/:projectId/preview", async (req, res, next) => {
+  const id = Array.isArray(req.params.projectId) ? req.params.projectId[0] : req.params.projectId;
+  try {
+    const projectDir = await resolveProjectDir(id);
+    if (!fs.existsSync(projectDir)) {
+      return res.status(404).send("Project directory not found");
+    }
+    // Dynamically mount express.static for this specific request's project directory
+    return express.static(projectDir)(req, res, next);
+  } catch (err) {
+    next(err);
   }
 });
 

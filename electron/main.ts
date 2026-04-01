@@ -79,23 +79,22 @@ async function createWindow(apiPort: number) {
 }
 
 async function startApiServer(port: number) {
+  // In dev, the api-server is started as a separate process by `concurrently`
+  // (see the electron:dev script). Electron must NOT try to import it here —
+  // there is no TypeScript loader registered in the Electron runtime, and port
+  // 3000 is already bound by that separate process.
+  if (isDev) return;
+
   const userDataPath = app.getPath("userData");
   process.env.PORT = String(port);
   process.env.PROJECTS_ROOT = path.join(userDataPath, "projects");
   process.env.DB_PATH = path.join(userDataPath, "livescriptor.db");
-
-  if (!isDev) {
-    process.env.NODE_ENV = "production";
-    process.env.STATIC_ROOT = path.join(__dirname, "..", "..", "artifacts", "livescriptor", "dist", "public");
-  }
+  process.env.NODE_ENV = "production";
+  process.env.STATIC_ROOT = path.join(__dirname, "..", "..", "artifacts", "livescriptor", "dist", "public");
   process.env.ELECTRON = "true";
 
-  // Dynamically import the api-server app
-  // In dev: load from source via tsx
-  // In production: load from bundled server
-  const serverPath = isDev
-    ? path.resolve(__dirname, "..", "..", "artifacts", "api-server", "src", "app.ts")
-    : path.resolve(__dirname, "..", "..", "artifacts", "api-server", "dist", "index.mjs");
+  // In production the api-server is pre-built to dist/index.mjs by `electron:build`
+  const serverPath = path.resolve(__dirname, "..", "..", "artifacts", "api-server", "dist", "index.mjs");
 
   const { default: appExpress } = await import(pathToFileURL(serverPath).toString());
 

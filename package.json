@@ -13,18 +13,19 @@
     "electron:compile": "node electron/build.mjs",
     "electron:dev": "concurrently -k -n api,vite,electron \"pnpm --filter @workspace/api-server run dev\" \"pnpm --filter @workspace/livescriptor run dev\" \"wait-on http://localhost:5173 && node electron/launch.js\"",
     "electron:build": "pnpm -r --if-present run build && node electron/build.mjs && electron-builder",
-    "electron:pack": "pnpm -r --if-present run build && node electron/build.mjs && electron-builder --dir"
+    "electron:pack": "pnpm -r --if-present run build && node electron/build.mjs && electron-builder --dir",
+    "purify": "knip",
+    "purge": "knip --fix"
   },
   "private": true,
   "dependencies": {
     "better-sqlite3": "^11.10.0",
+    "cors": "^2.8.5",
+    "drizzle-orm": "catalog:",
     "express": "^5.2.1",
     "openai": "^6.32.0",
-    "drizzle-orm": "catalog:",
     "pino": "^9.0.0",
-    "pino-http": "^10.0.0",
-    "cors": "^2.8.5",
-    "cookie-parser": "^1.4.7"
+    "pino-http": "^10.0.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
@@ -34,7 +35,7 @@
     "electron": "^33.4.11",
     "electron-builder": "^26.0.0",
     "esbuild": "^0.27.3",
-    "express": "^5.2.1",
+    "knip": "^6.2.0",
     "prettier": "^3.8.1",
     "tsx": "catalog:",
     "typescript": "~5.9.2",
